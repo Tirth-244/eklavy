@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { BookOpen, TrendingUp, Trophy, Play, Lock, CheckCircle, Clock } from 'lucide-react'
 import Sidebar from '../../components/Sidebar'
 import { purchaseAPI } from '../../api/payment.api'
@@ -7,12 +7,18 @@ import { progressAPI } from '../../api/progress.api'
 import { useAuth } from '../../context/AuthContext'
 import './Dashboard.css'
 
+const TAB_MAP = { courses: 'courses', progress: 'progress', achievements: 'achievements' }
+
 const StudentDashboard = () => {
   const { user } = useAuth()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [purchases, setPurchases] = useState([])
   const [progress, setProgress] = useState({ data: [], byCourse: {} })
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState('courses')
+
+  // Read active tab from URL, default to 'courses'
+  const activeTab = TAB_MAP[searchParams.get('tab')] || 'courses'
+  const setActiveTab = (tab) => setSearchParams({ tab }, { replace: true })
 
   useEffect(() => {
     const fetchData = async () => {

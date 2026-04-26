@@ -1,32 +1,42 @@
-import { NavLink, useNavigate } from 'react-router-dom'
+import { NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { useState } from 'react'
 import {
   Home, BookOpen, TrendingUp, Trophy, Upload, Users, BarChart2, LogOut, X
 } from 'lucide-react'
+import LogoutModal from './LogoutModal'
 import './Sidebar.css'
 
 const studentLinks = [
   { to: '/home', icon: Home, label: 'Home' },
-  { to: '/student/dashboard', icon: BookOpen, label: 'My Courses' },
-  { to: '/student/dashboard#progress', icon: TrendingUp, label: 'Progress' },
-  { to: '/student/dashboard#achievements', icon: Trophy, label: 'Achievements' },
+  { to: '/student/dashboard?tab=courses', icon: BookOpen, label: 'My Courses' },
+  { to: '/student/dashboard?tab=progress', icon: TrendingUp, label: 'Progress' },
+  { to: '/student/dashboard?tab=achievements', icon: Trophy, label: 'Achievements' },
 ]
 
 const teacherLinks = [
   { to: '/home', icon: Home, label: 'Home' },
-  { to: '/teacher/dashboard', icon: BarChart2, label: 'Overview' },
-  { to: '/teacher/dashboard#upload', icon: Upload, label: 'Upload Content' },
-  { to: '/teacher/dashboard#students', icon: Users, label: 'Students' },
+  { to: '/teacher/dashboard?tab=overview', icon: BarChart2, label: 'Overview' },
+  { to: '/teacher/dashboard?tab=upload', icon: Upload, label: 'Upload Content' },
+  { to: '/teacher/dashboard?tab=students', icon: Users, label: 'Students' },
 ]
 
 const Sidebar = ({ onClose }) => {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
   const links = user?.role === 'teacher' ? teacherLinks : studentLinks
+  const currentUrl = location.pathname + location.search
+  const [showLogoutModal, setShowLogoutModal] = useState(false)
 
   const handleLogout = () => {
+    setShowLogoutModal(true)
+  }
+
+  const confirmLogout = () => {
+    setShowLogoutModal(false)
     logout()
-    navigate('/login')
+    navigate('/')
   }
 
   return (
@@ -55,7 +65,7 @@ const Sidebar = ({ onClose }) => {
           <NavLink
             key={to + label}
             to={to}
-            className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
+            className={() => `sidebar-link ${currentUrl === to ? 'active' : ''}`}
             onClick={onClose}
           >
             <Icon size={18} />
@@ -68,6 +78,13 @@ const Sidebar = ({ onClose }) => {
         <LogOut size={16} />
         Logout
       </button>
+
+      {/* Logout Confirmation Modal */}
+      <LogoutModal
+        show={showLogoutModal}
+        onCancel={() => setShowLogoutModal(false)}
+        onConfirm={confirmLogout}
+      />
     </aside>
   )
 }

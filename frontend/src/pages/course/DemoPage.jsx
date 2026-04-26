@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react'
-import { useParams, Link } from 'react-router-dom'
-import { Play, Clock, ArrowLeft, Lock, Atom, FlaskConical, Calculator } from 'lucide-react'
+import { useParams, Link, useNavigate } from 'react-router-dom'
+import { Play, Clock, ArrowLeft, Lock, Unlock, Atom, FlaskConical, Calculator } from 'lucide-react'
 import ReactPlayer from 'react-player'
 import Navbar from '../../components/Navbar'
+import ChapterList from '../../components/ChapterList'
 import { courseAPI } from '../../api/course.api'
 import { contentAPI } from '../../api/content.api'
+import { useAuth } from '../../context/AuthContext'
+import { GUJARAT_SYLLABUS } from '../../data/gujaratSyllabus'
 import './CoursePage.css'
 import './DemoPage.css'
 
@@ -31,6 +34,8 @@ const SUBJECT_META = {
 
 const DemoPage = () => {
   const { subject } = useParams()
+  const navigate = useNavigate()
+  const { isAuthenticated } = useAuth()
   // Normalise capitalisation: "physics" → "Physics"
   const normSubject = subject.charAt(0).toUpperCase() + subject.slice(1).toLowerCase()
   const meta = SUBJECT_META[normSubject] || SUBJECT_META.Physics
@@ -39,6 +44,11 @@ const DemoPage = () => {
   const [demoContent, setDemoContent] = useState([])
   const [selectedVideo, setSelectedVideo] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [isUnlocked, setIsUnlocked] = useState(false)
+
+  // Get syllabus data for this subject
+  const syllabusData = GUJARAT_SYLLABUS[normSubject]
+  const chapters = syllabusData?.chapters || []
 
   useEffect(() => {
     const fetchData = async () => {
@@ -185,20 +195,40 @@ const DemoPage = () => {
               </div>
             )}
 
-            {/* Premium teaser */}
-            <div className="demo-premium-teaser">
-              <div className="teaser-icon">
-                <Lock size={28} color="var(--accent-gold)" />
-              </div>
-              <div className="teaser-content">
-                <h3>Unlock the Full {normSubject} Course</h3>
-                <p>Get access to all premium lectures, PDF notes, progress tracking and much more.</p>
-              </div>
-              <div className="teaser-actions">
-                <Link to="/signup" className="btn btn-primary" id={`demo-unlock-${normSubject.toLowerCase()}`}>
-                  Join & Unlock →
-                </Link>
-              </div>
+            {/* Unlock Full Course Section */}
+            <div className="unlock-course-section">
+              {!isUnlocked ? (
+                <div className="demo-premium-teaser">
+                  <div className="teaser-icon">
+                    <Lock size={28} color="var(--accent-gold)" />
+                  </div>
+                  <div className="teaser-content">
+                    <h3>Unlock Full {normSubject} Course</h3>
+                    <p>
+                      {syllabusData?.label} — ગુજરાત બોર્ડ અભ્યાસક્રમ (ધોરણ 11-12).
+                      Get access to all {chapters.length} chapters, premium lectures, PDF notes and progress tracking.
+                    </p>
+                  </div>
+                  <div className="teaser-actions">
+                    <button
+                      className="btn btn-primary"
+                      id={`unlock-btn-${normSubject.toLowerCase()}`}
+                      onClick={() => {
+                        if (!isAuthenticated) {
+                          navigate('/login')
+                        } else {
+                          setIsUnlocked(true)
+                        }
+                      }}
+                    >
+                      <Unlock size={16} />
+                      Unlock Full {normSubject} Course
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <ChapterList chapters={chapters} subject={normSubject} />
+              )}
             </div>
           </>
         )}

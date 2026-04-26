@@ -31,7 +31,7 @@ const Login = () => {
       const { data } = await authAPI.login(form)
       login(data.user, data.token)
       toast.success(`Welcome back, ${data.user.name.split(' ')[0]}! 🎉`)
-      navigate('/user', { replace: true })
+      navigate('/home', { replace: true })
     } catch (err) {
       const msg = err.response?.data?.message || 'Login failed. Please try again.'
       toast.error(msg)

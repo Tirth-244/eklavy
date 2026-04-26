@@ -2,6 +2,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { LogOut, BookOpen, User, Menu, X } from 'lucide-react'
 import { useState } from 'react'
+import LogoutModal from './LogoutModal'
 import './Navbar.css'
 
 const Navbar = () => {
@@ -9,17 +10,25 @@ const Navbar = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const [menuOpen, setMenuOpen] = useState(false)
+  const [showLogoutModal, setShowLogoutModal] = useState(false)
 
   const handleLogout = () => {
-    logout()
-    navigate('/login')
+    setShowLogoutModal(true)
   }
 
+  const confirmLogout = () => {
+    setShowLogoutModal(false)
+    logout()
+    navigate('/')
+  }
+
+  const homeLink = isAuthenticated ? '/home' : '/'
+
   const navLinks = [
-    { to: '/', label: 'Home' },
-    { to: '/course/Physics', label: 'Physics' },
-    { to: '/course/Chemistry', label: 'Chemistry' },
-    { to: '/course/Maths', label: 'Maths' },
+    { to: homeLink, label: 'Home' },
+    { to: isAuthenticated ? '/course/Physics' : '/course/physics/demo', label: 'Physics' },
+    { to: isAuthenticated ? '/course/Chemistry' : '/course/chemistry/demo', label: 'Chemistry' },
+    { to: isAuthenticated ? '/course/Maths' : '/course/maths/demo', label: 'Maths' },
   ]
 
   const dashboardLink = user?.role === 'teacher' ? '/teacher/dashboard' : '/user'
@@ -28,7 +37,7 @@ const Navbar = () => {
     <nav className="navbar">
       <div className="navbar-inner">
         {/* Logo */}
-        <Link to="/" className="navbar-logo">
+        <Link to={homeLink} className="navbar-logo">
           <span className="logo-icon">⚡</span>
           <span className="logo-text">Eklavya</span>
         </Link>
@@ -98,6 +107,13 @@ const Navbar = () => {
           )}
         </div>
       )}
+
+      {/* Logout Confirmation Modal */}
+      <LogoutModal
+        show={showLogoutModal}
+        onCancel={() => setShowLogoutModal(false)}
+        onConfirm={confirmLogout}
+      />
     </nav>
   )
 }

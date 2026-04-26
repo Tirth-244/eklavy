@@ -5,6 +5,7 @@ import RoleRoute from '../components/RoleRoute'
 import Login from '../pages/auth/Login'
 import Signup from '../pages/auth/Signup'
 import Home from '../pages/home/Home'
+import UserHome from '../pages/home/UserHome'
 import CoursePage from '../pages/course/CoursePage'
 import DemoPage from '../pages/course/DemoPage'
 import StudentDashboard from '../pages/dashboard/StudentDashboard'
@@ -15,9 +16,15 @@ const AppRouter = () => (
   <Routes>
     {/* ── Public routes (no login required) ── */}
     <Route path="/" element={<Home />} />
-    <Route path="/home" element={<Home />} />
     <Route path="/login" element={<Login />} />
     <Route path="/signup" element={<Signup />} />
+
+    {/* ── Protected user home ── */}
+    <Route path="/home" element={
+      <ProtectedRoute>
+        <UserHome />
+      </ProtectedRoute>
+    } />
 
     {/* ── Public demo lecture pages ── */}
     <Route path="/course/:subject/demo" element={<DemoPage />} />

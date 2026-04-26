@@ -1,0 +1,95 @@
+/* ── Logout Confirmation Modal ── */
+.logout-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  animation: fadeIn 150ms ease;
+  overflow: hidden;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.logout-modal {
+  position: relative;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: 36px 32px 28px;
+  max-width: 380px;
+  width: 100%;
+  text-align: center;
+  box-shadow: var(--shadow-lg);
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+.logout-modal-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color var(--transition-fast);
+}
+.logout-modal-close:hover {
+  color: var(--text-primary);
+}
+
+.logout-modal-icon {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  background: rgba(244, 63, 94, 0.15);
+  color: var(--accent-rose);
+}
+
+.logout-modal-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: var(--text-primary);
+}
+
+.logout-modal-text {
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
+
+.logout-modal-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+.logout-modal-actions .btn {
+  flex: 1;
+  justify-content: center;
+}
+
+/* ── Mobile fix ── */
+@media (max-width: 480px) {
+  .logout-modal {
+    padding: 28px 20px 24px;
+    max-width: 100%;
+  }
+  .logout-modal-actions {
+    flex-direction: column;
+  }
+}

@@ -1,0 +1,122 @@
+/* ── Chapter List Section ── */
+.chapter-list-section {
+  margin-top: 40px;
+}
+
+.chapter-list-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 24px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+.chapter-list-header h2 {
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+/* ── Chapter Group (per class) ── */
+.chapter-group {
+  margin-bottom: 32px;
+}
+
+.chapter-group-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.chapter-class-badge {
+  display: inline-flex;
+  padding: 4px 14px;
+  border-radius: var(--radius-full);
+  background: var(--accent-indigo-dim);
+  color: var(--accent-indigo-light);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.chapter-class-en {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+/* ── Chapter Grid ── */
+.chapter-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* ── Chapter Card ── */
+.chapter-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 18px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  transition: all var(--transition-fast);
+}
+.chapter-card:hover {
+  border-color: var(--border-accent);
+  background: var(--bg-card-hover);
+  transform: translateX(4px);
+}
+
+.chapter-card-num {
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: var(--accent-gold);
+  background: var(--accent-gold-dim);
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+}
+
+.chapter-card-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.chapter-title-gu {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+  line-height: 1.4;
+}
+
+.chapter-title-en {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.chapter-start-btn {
+  flex-shrink: 0;
+  font-size: 0.75rem !important;
+  padding: 6px 12px !important;
+  opacity: 0.5;
+}
+
+/* ── Responsive ── */
+@media (max-width: 600px) {
+  .chapter-card {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .chapter-start-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
