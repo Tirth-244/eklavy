@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { BookOpen, Play, Lock } from 'lucide-react'
+import toast from 'react-hot-toast'
 import './ChapterList.css'
 
 /**
@@ -21,11 +22,11 @@ const ChapterList = ({ chapters = [], subject, isPurchased = false, courseId }) 
 
   const handleChapterClick = (ch) => {
     if (!isPurchased) {
-      // Redirect to course page which has the Buy button
+      toast('Please purchase the course to access full content', { icon: '🔒' })
+      navigate(`/course/${subject}`)
+    } else {
       navigate(`/course/${subject}`)
     }
-    // If purchased: in future, navigate to the specific lecture for this chapter
-    // For now, the CoursePage handles video playback
   }
 
   const renderChapter = (ch) => (

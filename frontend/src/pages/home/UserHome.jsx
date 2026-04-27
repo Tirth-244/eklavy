@@ -45,7 +45,7 @@ const UserHome = () => {
               <BookOpen size={18} />
               Go to Dashboard
             </Link>
-            <Link to="/course/Physics/demo" className="btn btn-ghost btn-lg" id="userhome-demo-btn">
+            <Link to="/course/Physics" className="btn btn-ghost btn-lg" id="userhome-demo-btn">
               <Play size={16} fill="currentColor" />
               Watch a Lecture
             </Link>

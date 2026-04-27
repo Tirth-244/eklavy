@@ -6,6 +6,7 @@ import Navbar from '../../components/Navbar'
 import ChapterList from '../../components/ChapterList'
 import { courseAPI } from '../../api/course.api'
 import { contentAPI } from '../../api/content.api'
+import { purchaseAPI } from '../../api/purchase.api'
 import { useAuth } from '../../context/AuthContext'
 import { GUJARAT_SYLLABUS } from '../../data/gujaratSyllabus'
 import './CoursePage.css'
@@ -44,7 +45,7 @@ const DemoPage = () => {
   const [demoContent, setDemoContent] = useState([])
   const [selectedVideo, setSelectedVideo] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [isUnlocked, setIsUnlocked] = useState(false)
+  const [isPurchased, setIsPurchased] = useState(false)
 
   // Get syllabus data for this subject
   const syllabusData = GUJARAT_SYLLABUS[normSubject]
@@ -61,6 +62,15 @@ const DemoPage = () => {
         const contentRes = await contentAPI.getByCourse(fetchedCourse._id)
         const demos = (contentRes.data.data || []).filter((c) => c.type === 'demo')
         setDemoContent(demos)
+
+        if (isAuthenticated) {
+          try {
+            const purchaseRes = await purchaseAPI.getStatus(fetchedCourse._id)
+            setIsPurchased(purchaseRes.data.isPurchased)
+          } catch (err) {
+            console.error('Failed to fetch purchase status', err)
+          }
+        }
 
         // Auto-select the first demo
         if (demos.length > 0) setSelectedVideo(demos[0])
@@ -197,38 +207,7 @@ const DemoPage = () => {
 
             {/* Unlock Full Course Section */}
             <div className="unlock-course-section">
-              {!isUnlocked ? (
-                <div className="demo-premium-teaser">
-                  <div className="teaser-icon">
-                    <Lock size={28} color="var(--accent-gold)" />
-                  </div>
-                  <div className="teaser-content">
-                    <h3>Unlock Full {normSubject} Course</h3>
-                    <p>
-                      {syllabusData?.label} — ગુજરાત બોર્ડ અભ્યાસક્રમ (ધોરણ 11-12).
-                      Get access to all {chapters.length} chapters, premium lectures, PDF notes and progress tracking.
-                    </p>
-                  </div>
-                  <div className="teaser-actions">
-                    <button
-                      className="btn btn-primary"
-                      id={`unlock-btn-${normSubject.toLowerCase()}`}
-                      onClick={() => {
-                        if (!isAuthenticated) {
-                          navigate('/login')
-                        } else {
-                          setIsUnlocked(true)
-                        }
-                      }}
-                    >
-                      <Unlock size={16} />
-                      Unlock Full {normSubject} Course
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <ChapterList chapters={chapters} subject={normSubject} />
-              )}
+              <ChapterList chapters={chapters} subject={normSubject} isPurchased={isPurchased} courseId={course?._id} />
             </div>
           </>
         )}

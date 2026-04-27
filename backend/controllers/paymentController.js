@@ -42,7 +42,7 @@ export const createOrder = asyncHandler(async (req, res) => {
   const options = {
     amount,
     currency: 'INR',
-    receipt: `receipt_${userId}_${courseId}`,
+    receipt: `rcpt_${Date.now()}`,
     notes: {
       courseId: courseId.toString(),
       userId: userId.toString(),

@@ -6,11 +6,14 @@ import {
 import ReactPlayer from 'react-player'
 import toast from 'react-hot-toast'
 import Navbar from '../../components/Navbar'
+import ChapterList from '../../components/ChapterList'
 import { courseAPI } from '../../api/course.api'
 import { contentAPI } from '../../api/content.api'
 import { paymentAPI } from '../../api/payment.api'
 import { progressAPI } from '../../api/progress.api'
+import { purchaseAPI } from '../../api/purchase.api'
 import { useAuth } from '../../context/AuthContext'
+import { GUJARAT_SYLLABUS } from '../../data/gujaratSyllabus'
 import './CoursePage.css'
 
 const SUBJECT_META = {
@@ -26,13 +29,16 @@ const CoursePage = () => {
 
   const [course, setCourse] = useState(null)
   const [contents, setContents] = useState([])
-  const [hasPurchased, setHasPurchased] = useState(false)
+  const [isPurchased, setIsPurchased] = useState(false)
   const [selectedVideo, setSelectedVideo] = useState(null)
   const [loadingCourse, setLoadingCourse] = useState(true)
   const [paying, setPaying] = useState(false)
   const [completedIds, setCompletedIds] = useState(new Set())
 
-  const meta = SUBJECT_META[subject] || SUBJECT_META.Physics
+  const normSubject = subject ? subject.charAt(0).toUpperCase() + subject.slice(1).toLowerCase() : 'Physics'
+  const meta = SUBJECT_META[normSubject] || SUBJECT_META.Physics
+  const syllabusData = GUJARAT_SYLLABUS[normSubject]
+  const chapters = syllabusData?.chapters || []
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -47,7 +53,15 @@ const CoursePage = () => {
 
         const contentFetch = await contentAPI.getByCourse(fetchedCourse._id)
         setContents(contentFetch.data.data || [])
-        setHasPurchased(contentFetch.data.hasPurchased || false)
+
+        if (isAuthenticated) {
+          try {
+            const purchaseRes = await purchaseAPI.getStatus(fetchedCourse._id)
+            setIsPurchased(purchaseRes.data.isPurchased)
+          } catch (err) {
+            console.error('Failed to fetch purchase status', err)
+          }
+        }
 
         if (isAuthenticated) {
           const progressRes = await progressAPI.getMy()
@@ -82,7 +96,7 @@ const CoursePage = () => {
           try {
             await paymentAPI.verify({ ...response, courseId: course._id })
             toast.success('Payment successful! Course unlocked 🎉')
-            setHasPurchased(true)
+            setIsPurchased(true)
             const contentFetch = await contentAPI.getByCourse(course._id)
             setContents(contentFetch.data.data || [])
           } catch {
@@ -146,7 +160,7 @@ const CoursePage = () => {
               </div>
             </div>
           </div>
-          {!hasPurchased && (
+          {!isPurchased && (
             <div className="course-buy-box">
               <div className="buy-price">₹{course?.price || 999}<span>/lifetime</span></div>
               <ul className="buy-includes">
@@ -166,7 +180,7 @@ const CoursePage = () => {
               </button>
             </div>
           )}
-          {hasPurchased && (
+          {isPurchased && (
             <div className="course-buy-box purchased">
               <CheckCircle size={40} className="purchased-icon" />
               <div className="purchased-title">Course Purchased</div>
@@ -270,6 +284,11 @@ const CoursePage = () => {
             </div>
           </div>
         )}
+
+        {/* Full Syllabus Section */}
+        <div className="content-group" style={{ marginTop: '40px' }}>
+          <ChapterList chapters={chapters} subject={normSubject} isPurchased={isPurchased} courseId={course?._id} />
+        </div>
 
         {contents.length === 0 && (
           <div className="empty-content">
