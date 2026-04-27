@@ -8,4 +8,5 @@ export const paymentAPI = {
 export const purchaseAPI = {
   getMy: () => axiosInstance.get('/purchase/my'),
   check: (courseId) => axiosInstance.get(`/purchase/check/${courseId}`),
+  status: (courseId) => axiosInstance.get(`/purchase/status/${courseId}`),
 }

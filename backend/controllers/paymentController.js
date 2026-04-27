@@ -6,6 +6,7 @@ import User from '../models/User.js';
 import asyncHandler from '../utils/asyncHandler.js';
 
 // Lazy initialise — avoids crash when env vars are not yet set at module load
+
 const getRazorpay = () => {
   if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
     throw Object.assign(new Error('Razorpay keys not configured. Set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in .env'), { statusCode: 503 });

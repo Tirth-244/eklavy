@@ -22,3 +22,20 @@ export const checkPurchase = asyncHandler(async (req, res) => {
 
   res.status(200).json({ success: true, hasPurchased: !!purchase });
 });
+
+// ── GET /api/purchase/status/:courseId ───────────────────────────────────────
+// Returns purchase status only — never exposes video URLs
+export const getPurchaseStatus = asyncHandler(async (req, res) => {
+  const { courseId } = req.params;
+  const purchase = await Purchase.findOne({
+    userId: req.userId,
+    courseId,
+    paymentStatus: 'completed',
+  }).select('_id paymentStatus createdAt');
+
+  res.status(200).json({
+    success: true,
+    isPurchased: !!purchase,
+    purchasedAt: purchase?.createdAt || null,
+  });
+});

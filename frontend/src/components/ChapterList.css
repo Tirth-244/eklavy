@@ -7,13 +7,36 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
   padding-bottom: 14px;
   border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
 }
 .chapter-list-header h2 {
-  font-size: 1.15rem;
+  font-size: 1.1rem;
   font-weight: 700;
+}
+
+/* ── Locked Banner ── */
+.chapter-locked-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  border-radius: var(--radius-md);
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  color: var(--accent-gold);
+  font-size: 0.85rem;
+  font-weight: 500;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.chapter-locked-banner span {
+  flex: 1;
+  min-width: 200px;
+  color: var(--text-secondary);
 }
 
 /* ── Chapter Group (per class) ── */
@@ -25,7 +48,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 .chapter-class-badge {
@@ -44,6 +67,15 @@
   font-weight: 500;
 }
 
+.chapter-count-pill {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  padding: 2px 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+}
+
 /* ── Chapter Grid ── */
 .chapter-grid {
   display: flex;
@@ -51,23 +83,53 @@
   gap: 6px;
 }
 
-/* ── Chapter Card ── */
+/* ── Chapter Card Base ── */
 .chapter-card {
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 16px 18px;
+  padding: 14px 18px;
   border-radius: var(--radius-md);
   border: 1px solid var(--border);
   background: var(--bg-card);
+  cursor: pointer;
   transition: all var(--transition-fast);
+  outline: none;
 }
-.chapter-card:hover {
-  border-color: var(--border-accent);
-  background: var(--bg-card-hover);
-  transform: translateX(4px);
+.chapter-card:focus-visible {
+  box-shadow: 0 0 0 2px var(--accent-gold);
 }
 
+/* ── Unlocked State ── */
+.chapter-card.chapter-unlocked {
+  border-color: var(--border);
+}
+.chapter-card.chapter-unlocked:hover {
+  border-color: var(--accent-emerald);
+  background: rgba(16, 185, 129, 0.05);
+  transform: translateX(4px);
+}
+.chapter-card.chapter-unlocked:hover .chapter-state-icon {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--accent-emerald);
+}
+
+/* ── Locked State ── */
+.chapter-card.chapter-locked {
+  opacity: 0.75;
+}
+.chapter-card.chapter-locked:hover {
+  border-color: rgba(245, 158, 11, 0.5);
+  background: rgba(245, 158, 11, 0.04);
+  transform: translateX(4px);
+  opacity: 1;
+}
+.chapter-card.chapter-locked:hover .chapter-state-icon {
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--accent-gold);
+}
+
+/* ── Chapter Number Badge ── */
 .chapter-card-num {
   font-family: var(--font-display);
   font-size: 0.8rem;
@@ -83,13 +145,14 @@
   flex-shrink: 0;
 }
 
+/* ── Chapter Content ── */
 .chapter-card-content {
   flex: 1;
   min-width: 0;
 }
 
 .chapter-title-gu {
-  font-size: 0.95rem;
+  font-size: 0.92rem;
   font-weight: 600;
   color: var(--text-primary);
   margin-bottom: 2px;
@@ -97,16 +160,32 @@
 }
 
 .chapter-title-en {
-  font-size: 0.78rem;
+  font-size: 0.76rem;
   color: var(--text-muted);
   margin: 0;
 }
 
-.chapter-start-btn {
+/* ── State Icon (Lock / Play) ── */
+.chapter-state-icon {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.73rem;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: var(--radius-full);
+  transition: all var(--transition-fast);
   flex-shrink: 0;
-  font-size: 0.75rem !important;
-  padding: 6px 12px !important;
-  opacity: 0.5;
+}
+
+.chapter-state-icon.state-play {
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--accent-emerald);
+}
+
+.chapter-state-icon.state-lock {
+  background: rgba(245, 158, 11, 0.1);
+  color: var(--accent-gold);
 }
 
 /* ── Responsive ── */
@@ -114,9 +193,13 @@
   .chapter-card {
     flex-wrap: wrap;
     gap: 10px;
+    padding: 12px 14px;
   }
-  .chapter-start-btn {
-    width: 100%;
-    justify-content: center;
+  .chapter-state-icon span {
+    display: none;
+  }
+  .chapter-locked-banner {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }
