@@ -100,7 +100,7 @@ const UserHome = () => {
             {!loading && displaySubjects.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '40px', gridColumn: '1 / -1' }}>
                 <p style={{ color: 'var(--text-muted)' }}>not purchase cource you can access quick access here</p>
-                <Link to="/" className="btn btn-primary" style={{ marginTop: '16px' }}>View All Courses</Link>
+                <Link to="/course/Physics" className="btn btn-primary" style={{ marginTop: '16px' }}>View All Courses</Link>
               </div>
             ) : (
               displaySubjects.map(({ subject, icon: Icon, emoji, gradient, color, glow }) => (

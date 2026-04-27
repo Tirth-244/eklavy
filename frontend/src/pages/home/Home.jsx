@@ -142,8 +142,8 @@ const Home = () => {
             <div className="courses-grid">
               {displaySubjects.map(({ subject, meta, price, _id }) => {
                 const Icon = meta.icon
-                const demoLink = `/course/${subject.toLowerCase()}/demo`
-                const courseLink = `/course/${subject.toLowerCase()}/demo`
+                const demoLink = `/course/${subject}/demo`
+                const courseLink = `/course/${subject}`
                 return (
                   <div
                     key={subject}

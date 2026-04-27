@@ -119,8 +119,8 @@
   pointer-events: none;
   z-index: 1;
 }
-.input-with-icon { padding-left: 42px; }
-.input-with-icon-right { padding-right: 42px; }
+.input-with-icon { padding-left: 42px !important; }
+.input-with-icon-right { padding-right: 42px !important; }
 .input-icon-right {
   position: absolute;
   right: 12px;
