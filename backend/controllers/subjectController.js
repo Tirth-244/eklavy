@@ -46,5 +46,10 @@ export const deleteSubject = asyncHandler(async (req, res) => {
   if (!subject) {
     return res.status(404).json({ success: false, message: 'Subject not found' });
   }
-  res.status(200).json({ success: true, message: 'Subject deleted' });
+
+  // Cascade delete associated Course and Chapters
+  await Course.deleteOne({ subject: subject.name });
+  await Chapter.deleteMany({ subject: subject.name });
+
+  res.status(200).json({ success: true, message: 'Subject and associated data deleted' });
 });

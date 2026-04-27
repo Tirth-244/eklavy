@@ -143,7 +143,7 @@ const Home = () => {
               {displaySubjects.map(({ subject, meta, price, _id }) => {
                 const Icon = meta.icon
                 const demoLink = `/course/${subject.toLowerCase()}/demo`
-                const courseLink = `/course/${subject}`
+                const courseLink = `/course/${subject.toLowerCase()}/demo`
                 return (
                   <div
                     key={subject}
