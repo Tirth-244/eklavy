@@ -13,9 +13,10 @@ export const getAllCourses = asyncHandler(async (req, res) => {
 // ── GET /api/courses/:subject ────────────────────────────────────────────────
 export const getCourseBySubject = asyncHandler(async (req, res) => {
   const { subject } = req.params;
-  const capitalised = subject.charAt(0).toUpperCase() + subject.slice(1).toLowerCase();
-
-  const course = await Course.findOne({ subject: capitalised, isActive: true }).populate(
+  const course = await Course.findOne({ 
+    subject: new RegExp('^' + subject + '$', 'i'), 
+    isActive: true 
+  }).populate(
     'teacher',
     'name avatar'
   );

@@ -1,19 +1,18 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
-  Lock, Play, FileText, CheckCircle, ShoppingCart, Atom, FlaskConical, Calculator, Clock, BookOpen
+  Lock, Play, FileText, CheckCircle, ShoppingCart, Atom, FlaskConical, Calculator, Clock, BookOpen, ArrowLeft
 } from 'lucide-react'
 import ReactPlayer from 'react-player'
 import toast from 'react-hot-toast'
 import Navbar from '../../components/Navbar'
 import ChapterList from '../../components/ChapterList'
 import { courseAPI } from '../../api/course.api'
-import { contentAPI } from '../../api/content.api'
+import { chapterAPI } from '../../api/chapter.api'
 import { paymentAPI } from '../../api/payment.api'
 import { progressAPI } from '../../api/progress.api'
 import { purchaseAPI } from '../../api/purchase.api'
 import { useAuth } from '../../context/AuthContext'
-import { GUJARAT_SYLLABUS } from '../../data/gujaratSyllabus'
 import './CoursePage.css'
 
 const SUBJECT_META = {
@@ -28,7 +27,7 @@ const CoursePage = () => {
   const { user, isAuthenticated } = useAuth()
 
   const [course, setCourse] = useState(null)
-  const [contents, setContents] = useState([])
+  const [chapters, setChapters] = useState([])
   const [isPurchased, setIsPurchased] = useState(false)
   const [selectedVideo, setSelectedVideo] = useState(null)
   const [loadingCourse, setLoadingCourse] = useState(true)
@@ -37,22 +36,20 @@ const CoursePage = () => {
 
   const normSubject = subject ? subject.charAt(0).toUpperCase() + subject.slice(1).toLowerCase() : 'Physics'
   const meta = SUBJECT_META[normSubject] || SUBJECT_META.Physics
-  const syllabusData = GUJARAT_SYLLABUS[normSubject]
-  const chapters = syllabusData?.chapters || []
 
   useEffect(() => {
     const fetchAll = async () => {
       setLoadingCourse(true)
       try {
-        const [courseRes, contentRes] = await Promise.all([
+        const [courseRes, chaptersRes] = await Promise.all([
           courseAPI.getBySubject(subject),
-          contentAPI.getByCourse('').catch(() => ({ data: { data: [], hasPurchased: false } })),
+          chapterAPI.getBySubject(subject).catch(() => ({ data: { data: [] } })),
         ])
         const fetchedCourse = courseRes.data.data
         setCourse(fetchedCourse)
 
-        const contentFetch = await contentAPI.getByCourse(fetchedCourse._id)
-        setContents(contentFetch.data.data || [])
+        const fetchedChapters = chaptersRes.data.data || []
+        setChapters(fetchedChapters)
 
         if (isAuthenticated) {
           try {
@@ -97,8 +94,8 @@ const CoursePage = () => {
             await paymentAPI.verify({ ...response, courseId: course._id })
             toast.success('Payment successful! Course unlocked 🎉')
             setIsPurchased(true)
-            const contentFetch = await contentAPI.getByCourse(course._id)
-            setContents(contentFetch.data.data || [])
+            const chaptersRes = await chapterAPI.getBySubject(subject)
+            setChapters(chaptersRes.data.data || [])
           } catch {
             toast.error('Payment verification failed. Contact support.')
           }
@@ -125,8 +122,8 @@ const CoursePage = () => {
     }
   }
 
-  const demoContent = contents.filter((c) => c.type === 'demo')
-  const premiumContent = contents.filter((c) => c.type === 'premium')
+  const demoContent = chapters.filter((c) => c.isFree)
+  const premiumContent = chapters.filter((c) => !c.isFree)
 
   if (loadingCourse) {
     return (
@@ -154,7 +151,7 @@ const CoursePage = () => {
               <h1 className="course-header-title">{subject}</h1>
               <p className="course-header-desc">{course?.description || `Complete ${subject} curriculum for Board exams and competitive tests.`}</p>
               <div className="course-header-meta">
-                <span><BookOpen size={14} /> {course?.totalLectures || contents.length} Lectures</span>
+                <span><BookOpen size={14} /> {chapters.length} Chapters</span>
                 <span><Play size={14} /> {demoContent.length} Free</span>
                 <span><Lock size={14} /> {premiumContent.length} Premium</span>
               </div>
@@ -164,7 +161,7 @@ const CoursePage = () => {
             <div className="course-buy-box">
               <div className="buy-price">₹{course?.price || 999}<span>/lifetime</span></div>
               <ul className="buy-includes">
-                <li><CheckCircle size={14} /> {contents.length} video lectures</li>
+                <li><CheckCircle size={14} /> {chapters.length} detailed chapters</li>
                 <li><CheckCircle size={14} /> Downloadable PDF notes</li>
                 <li><CheckCircle size={14} /> Progress tracking</li>
                 <li><CheckCircle size={14} /> Lifetime access</li>
@@ -192,8 +189,16 @@ const CoursePage = () => {
 
       {/* Video Player */}
       {selectedVideo && (
-        <div className="video-player-section animate-fade-in">
+        <div className="video-player-section animate-fade-in" style={{ position: 'relative' }}>
           <div className="container">
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
+              <button className="btn btn-ghost btn-sm" onClick={() => setSelectedVideo(null)} id="course-video-back">
+                <ArrowLeft size={16} /> Back
+              </button>
+              <button className="btn btn-ghost btn-sm" onClick={() => setSelectedVideo(null)} id="course-video-close">
+                <span style={{ fontSize: '1rem' }}>❌</span> Close
+              </button>
+            </div>
             <div className="video-wrapper">
               <ReactPlayer
                 url={selectedVideo.videoUrl}
@@ -207,23 +212,15 @@ const CoursePage = () => {
               />
             </div>
             <div className="video-info">
-              <h3>{selectedVideo.title}</h3>
+              <h3>{selectedVideo.titleGu} ({selectedVideo.titleEn})</h3>
               <div className="video-meta">
-                <span className={`badge badge-${selectedVideo.type === 'demo' ? 'emerald' : 'indigo'}`}>
-                  {selectedVideo.type}
+                <span className={`badge badge-${selectedVideo.isFree ? 'emerald' : 'indigo'}`}>
+                  {selectedVideo.isFree ? 'Free Demo' : 'Premium'}
                 </span>
-                {selectedVideo.duration && (
-                  <span className="video-duration"><Clock size={13} /> {selectedVideo.duration}</span>
-                )}
                 {completedIds.has(selectedVideo._id) && (
                   <span className="badge badge-gold"><CheckCircle size={12} /> Completed</span>
                 )}
               </div>
-              {selectedVideo.notesUrl && (
-                <a href={selectedVideo.notesUrl} target="_blank" rel="noreferrer" className="btn btn-ghost btn-sm">
-                  <FileText size={14} /> Download Notes
-                </a>
-              )}
             </div>
           </div>
         </div>
@@ -231,66 +228,18 @@ const CoursePage = () => {
 
       {/* Content List */}
       <div className="container content-section">
-        {/* Demo */}
-        {demoContent.length > 0 && (
-          <div className="content-group">
-            <div className="content-group-header">
-              <Play size={18} fill="currentColor" style={{ color: 'var(--accent-emerald)' }} />
-              <h2>Free Demo Lectures</h2>
-              <span className="badge badge-emerald">{demoContent.length} free</span>
-            </div>
-            <div className="content-list">
-              {demoContent.map((item, idx) => (
-                <ContentItem
-                  key={item._id}
-                  item={item}
-                  idx={idx}
-                  selected={selectedVideo?._id === item._id}
-                  completed={completedIds.has(item._id)}
-                  locked={false}
-                  onClick={() => setSelectedVideo(item)}
-                />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Premium */}
-        {premiumContent.length > 0 && (
-          <div className="content-group">
-            <div className="content-group-header">
-              <Lock size={18} style={{ color: 'var(--accent-indigo-light)' }} />
-              <h2>Premium Lectures</h2>
-              <span className="badge badge-indigo">{premiumContent.length} lectures</span>
-            </div>
-            <div className="content-list">
-              {premiumContent.map((item, idx) => (
-                <ContentItem
-                  key={item._id}
-                  item={item}
-                  idx={demoContent.length + idx}
-                  selected={selectedVideo?._id === item._id}
-                  completed={completedIds.has(item._id)}
-                  locked={item.locked}
-                  onClick={() => {
-                    if (item.locked) {
-                      toast('Purchase the course to unlock this lecture', { icon: '🔒' })
-                    } else {
-                      setSelectedVideo(item)
-                    }
-                  }}
-                />
-              ))}
-            </div>
-          </div>
-        )}
-
         {/* Full Syllabus Section */}
-        <div className="content-group" style={{ marginTop: '40px' }}>
-          <ChapterList chapters={chapters} subject={normSubject} isPurchased={isPurchased} courseId={course?._id} />
+        <div className="content-group">
+          <ChapterList 
+            chapters={chapters} 
+            subject={normSubject} 
+            isPurchased={isPurchased} 
+            courseId={course?._id} 
+            onChapterClick={(ch) => setSelectedVideo(ch)}
+          />
         </div>
 
-        {contents.length === 0 && (
+        {chapters.length === 0 && (
           <div className="empty-content">
             <span style={{ fontSize: '3rem' }}>📚</span>
             <h3>Content Coming Soon</h3>
@@ -301,29 +250,5 @@ const CoursePage = () => {
     </div>
   )
 }
-
-const ContentItem = ({ item, idx, selected, completed, locked, onClick }) => (
-  <div
-    className={`content-item ${selected ? 'selected' : ''} ${locked ? 'locked' : ''}`}
-    onClick={onClick}
-    id={`content-item-${item._id}`}
-    role="button"
-    tabIndex={0}
-  >
-    <div className="content-item-num">{String(idx + 1).padStart(2, '0')}</div>
-    <div className="content-item-icon">
-      {locked ? <Lock size={15} /> : completed ? <CheckCircle size={15} color="var(--accent-emerald)" /> : <Play size={15} />}
-    </div>
-    <div className="content-item-info">
-      <span className="content-item-title">{item.title}</span>
-      <div className="content-item-meta">
-        {item.duration && <span><Clock size={11} /> {item.duration}</span>}
-        {item.notesUrl && <span><FileText size={11} /> Notes</span>}
-      </div>
-    </div>
-    {locked && <span className="content-lock-badge"><Lock size={11} /> Purchase to unlock</span>}
-    {completed && !locked && <CheckCircle size={16} color="var(--accent-emerald)" />}
-  </div>
-)
 
 export default CoursePage

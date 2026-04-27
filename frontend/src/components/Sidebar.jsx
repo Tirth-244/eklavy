@@ -15,10 +15,9 @@ const studentLinks = [
 ]
 
 const teacherLinks = [
-  { to: '/home', icon: Home, label: 'Home' },
-  { to: '/teacher/dashboard?tab=overview', icon: BarChart2, label: 'Overview' },
-  { to: '/teacher/dashboard?tab=upload', icon: Upload, label: 'Upload Content' },
-  { to: '/teacher/dashboard?tab=students', icon: Users, label: 'Students' },
+  { to: '/admin/dashboard?tab=overview', icon: BarChart2, label: 'Overview' },
+  { to: '/admin/dashboard?tab=subjects', icon: BookOpen, label: 'Subjects' },
+  { to: '/admin/dashboard?tab=students', icon: Users, label: 'Students' },
 ]
 
 const Sidebar = ({ onClose }) => {

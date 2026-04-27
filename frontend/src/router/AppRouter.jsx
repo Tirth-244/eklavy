@@ -45,8 +45,9 @@ const AppRouter = () => (
 
     {/* ── Teacher-only routes ── */}
     <Route element={<ProtectedRoute />}>
-      <Route element={<RoleRoute role="teacher" />}>
-        <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
+      <Route element={<RoleRoute role="teacher" fallback="/" />}>
+        <Route path="/admin/dashboard" element={<TeacherDashboard />} />
+        <Route path="/teacher/dashboard" element={<Navigate to="/admin/dashboard" replace />} />
       </Route>
     </Route>
 

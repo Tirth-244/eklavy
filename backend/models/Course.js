@@ -5,7 +5,6 @@ const courseSchema = new mongoose.Schema(
     subject: {
       type: String,
       required: [true, 'Subject is required'],
-      enum: ['Physics', 'Chemistry', 'Maths'],
       unique: true,
     },
     description: {

@@ -1,7 +1,8 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { LogOut, BookOpen, User, Menu, X } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { subjectAPI } from '../api/subject.api'
 import LogoutModal from './LogoutModal'
 import './Navbar.css'
 
@@ -11,6 +12,13 @@ const Navbar = () => {
   const location = useLocation()
   const [menuOpen, setMenuOpen] = useState(false)
   const [showLogoutModal, setShowLogoutModal] = useState(false)
+  const [subjects, setSubjects] = useState([])
+
+  useEffect(() => {
+    subjectAPI.getAll()
+      .then(res => setSubjects(res.data.data || []))
+      .catch(() => {})
+  }, [])
 
   const handleLogout = () => {
     setShowLogoutModal(true)
@@ -24,14 +32,19 @@ const Navbar = () => {
 
   const homeLink = isAuthenticated ? '/home' : '/'
 
-  const navLinks = [
+  let navLinks = [
     { to: homeLink, label: 'Home' },
-    { to: isAuthenticated ? '/course/Physics' : '/course/physics/demo', label: 'Physics' },
-    { to: isAuthenticated ? '/course/Chemistry' : '/course/chemistry/demo', label: 'Chemistry' },
-    { to: isAuthenticated ? '/course/Maths' : '/course/maths/demo', label: 'Maths' },
+    ...subjects.map(s => ({
+      to: isAuthenticated ? `/course/${s.name}` : `/course/${s.name.toLowerCase()}/demo`,
+      label: s.name
+    }))
   ]
 
-  const dashboardLink = user?.role === 'teacher' ? '/teacher/dashboard' : '/user'
+  if (user?.role === 'teacher') {
+    navLinks = navLinks.filter(link => link.label !== 'Home')
+  }
+
+  const dashboardLink = user?.role === 'teacher' ? '/admin/dashboard' : '/user'
 
   return (
     <nav className="navbar">

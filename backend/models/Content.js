@@ -11,7 +11,6 @@ const contentSchema = new mongoose.Schema(
     subject: {
       type: String,
       required: [true, 'Subject is required'],
-      enum: ['Physics', 'Chemistry', 'Maths'],
     },
     courseId: {
       type: mongoose.Schema.Types.ObjectId,

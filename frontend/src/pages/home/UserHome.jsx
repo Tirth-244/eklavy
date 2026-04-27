@@ -1,7 +1,9 @@
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowRight, Play, BookOpen, Trophy, Atom, FlaskConical, Calculator } from 'lucide-react'
 import Navbar from '../../components/Navbar'
 import { useAuth } from '../../context/AuthContext'
+import { purchaseAPI } from '../../api/purchase.api'
 import './Home.css'
 
 const SUBJECT_CARDS = [
@@ -14,6 +16,37 @@ const UserHome = () => {
   const { user, isTeacher } = useAuth()
   const dashboardLink = isTeacher ? '/teacher/dashboard' : '/user'
   const firstName = user?.name?.split(' ')[0] || 'Student'
+  
+  const [purchases, setPurchases] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [watchLink, setWatchLink] = useState('/course/Physics')
+
+  useEffect(() => {
+    if (user && !isTeacher) {
+      purchaseAPI.getMy()
+        .then(res => {
+          const fetchedPurchases = res.data.data || []
+          setPurchases(fetchedPurchases)
+          if (fetchedPurchases.length > 0) {
+            const sub = fetchedPurchases[0].courseId?.subject || 'Physics'
+            setWatchLink(`/course/${sub}`)
+          } else {
+            const randomSubjects = ['Physics', 'Chemistry', 'Mathematics', 'Biology']
+            setWatchLink(`/course/${randomSubjects[Math.floor(Math.random() * randomSubjects.length)]}`)
+          }
+        })
+        .catch(err => console.error(err))
+        .finally(() => setLoading(false))
+    } else {
+      setLoading(false)
+    }
+  }, [user, isTeacher])
+
+  const purchasedSubjects = purchases.map(p => p.courseId?.subject).filter(Boolean)
+  const displaySubjects = SUBJECT_CARDS.filter(c => 
+    purchasedSubjects.includes(c.subject) || 
+    (c.subject === 'Maths' && purchasedSubjects.includes('Mathematics'))
+  )
 
   return (
     <div className="home">
@@ -45,7 +78,7 @@ const UserHome = () => {
               <BookOpen size={18} />
               Go to Dashboard
             </Link>
-            <Link to="/course/Physics" className="btn btn-ghost btn-lg" id="userhome-demo-btn">
+            <Link to={watchLink} className="btn btn-ghost btn-lg" id="userhome-demo-btn">
               <Play size={16} fill="currentColor" />
               Watch a Lecture
             </Link>
@@ -64,39 +97,46 @@ const UserHome = () => {
             </p>
           </div>
           <div className="courses-grid">
-            {SUBJECT_CARDS.map(({ subject, icon: Icon, emoji, gradient, color, glow }) => (
-              <div
-                key={subject}
-                className="course-card"
-                style={{ '--card-color': color, '--card-glow': glow }}
-              >
-                <div className="course-card-top">
-                  <div className="course-icon-wrap" style={{ background: gradient }}>
-                    <Icon size={28} color="#fff" />
-                  </div>
-                  <span className="course-emoji">{emoji}</span>
-                </div>
-                <h3 className="course-name">{subject}</h3>
-                <div className="course-card-actions">
-                  <Link
-                    to={`/course/${subject.toLowerCase()}/demo`}
-                    className="btn btn-ghost btn-sm course-demo-btn"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <Play size={13} fill="currentColor" /> Demo
-                  </Link>
-                  <Link
-                    to={`/course/${subject}`}
-                    className="btn btn-sm course-explore-btn"
-                    style={{ background: gradient, color: '#fff', border: 'none' }}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    Open <ArrowRight size={13} />
-                  </Link>
-                </div>
-                <div className="course-card-glow" />
+            {!loading && displaySubjects.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '40px', gridColumn: '1 / -1' }}>
+                <p style={{ color: 'var(--text-muted)' }}>not purchase cource you can access quick access here</p>
+                <Link to="/" className="btn btn-primary" style={{ marginTop: '16px' }}>View All Courses</Link>
               </div>
-            ))}
+            ) : (
+              displaySubjects.map(({ subject, icon: Icon, emoji, gradient, color, glow }) => (
+                <div
+                  key={subject}
+                  className="course-card"
+                  style={{ '--card-color': color, '--card-glow': glow }}
+                >
+                  <div className="course-card-top">
+                    <div className="course-icon-wrap" style={{ background: gradient }}>
+                      <Icon size={28} color="#fff" />
+                    </div>
+                    <span className="course-emoji">{emoji}</span>
+                  </div>
+                  <h3 className="course-name">{subject}</h3>
+                  <div className="course-card-actions">
+                    <Link
+                      to={`/course/${subject.toLowerCase()}/demo`}
+                      className="btn btn-ghost btn-sm course-demo-btn"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Play size={13} fill="currentColor" /> Demo
+                    </Link>
+                    <Link
+                      to={`/course/${subject}`}
+                      className="btn btn-sm course-explore-btn"
+                      style={{ background: gradient, color: '#fff', border: 'none' }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      Open <ArrowRight size={13} />
+                    </Link>
+                  </div>
+                  <div className="course-card-glow" />
+                </div>
+              ))
+            )}
           </div>
         </div>
       </section>

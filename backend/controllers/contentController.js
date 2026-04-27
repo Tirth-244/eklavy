@@ -103,7 +103,7 @@ export const deleteContent = asyncHandler(async (req, res) => {
   }
 
   // Only the uploader or admin can delete
-  if (content.uploadedBy.toString() !== req.userId) {
+  if (content.uploadedBy.toString() !== req.userId && req.userRole !== 'admin') {
     return res.status(403).json({ success: false, message: 'Not authorized to delete this content' });
   }
 

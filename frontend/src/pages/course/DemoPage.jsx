@@ -5,10 +5,9 @@ import ReactPlayer from 'react-player'
 import Navbar from '../../components/Navbar'
 import ChapterList from '../../components/ChapterList'
 import { courseAPI } from '../../api/course.api'
-import { contentAPI } from '../../api/content.api'
+import { chapterAPI } from '../../api/chapter.api'
 import { purchaseAPI } from '../../api/purchase.api'
 import { useAuth } from '../../context/AuthContext'
-import { GUJARAT_SYLLABUS } from '../../data/gujaratSyllabus'
 import './CoursePage.css'
 import './DemoPage.css'
 
@@ -42,14 +41,11 @@ const DemoPage = () => {
   const meta = SUBJECT_META[normSubject] || SUBJECT_META.Physics
 
   const [course, setCourse] = useState(null)
-  const [demoContent, setDemoContent] = useState([])
+  const [chapters, setChapters] = useState([])
   const [selectedVideo, setSelectedVideo] = useState(null)
   const [loading, setLoading] = useState(true)
   const [isPurchased, setIsPurchased] = useState(false)
 
-  // Get syllabus data for this subject
-  const syllabusData = GUJARAT_SYLLABUS[normSubject]
-  const chapters = syllabusData?.chapters || []
 
   useEffect(() => {
     const fetchData = async () => {
@@ -58,10 +54,10 @@ const DemoPage = () => {
         const fetchedCourse = courseRes.data.data
         setCourse(fetchedCourse)
 
-        // Fetch content — unauthenticated, demo items only
-        const contentRes = await contentAPI.getByCourse(fetchedCourse._id)
-        const demos = (contentRes.data.data || []).filter((c) => c.type === 'demo')
-        setDemoContent(demos)
+        // Fetch chapters
+        const chaptersRes = await chapterAPI.getBySubject(normSubject)
+        const allChapters = chaptersRes.data.data || []
+        setChapters(allChapters)
 
         if (isAuthenticated) {
           try {
@@ -72,8 +68,9 @@ const DemoPage = () => {
           }
         }
 
-        // Auto-select the first demo
-        if (demos.length > 0) setSelectedVideo(demos[0])
+        // Auto-select the first free chapter if available
+        const freeChapters = allChapters.filter(c => c.isFree)
+        if (freeChapters.length > 0) setSelectedVideo(freeChapters[0])
       } catch {
         // Course may not exist yet — show empty state
       } finally {
@@ -124,8 +121,16 @@ const DemoPage = () => {
 
       {/* Video Player */}
       {selectedVideo && (
-        <div className="video-player-section animate-fade-in">
+        <div className="video-player-section animate-fade-in" style={{ position: 'relative' }}>
           <div className="container">
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
+              <button className="btn btn-ghost btn-sm" onClick={() => setSelectedVideo(null)} id="video-back-btn">
+                <ArrowLeft size={16} /> Back
+              </button>
+              <button className="btn btn-ghost btn-sm" onClick={() => setSelectedVideo(null)} id="video-close-btn">
+                <span style={{ fontSize: '1rem' }}>❌</span> Close
+              </button>
+            </div>
             <div className="video-wrapper">
               <ReactPlayer
                 url={selectedVideo.videoUrl}
@@ -136,20 +141,14 @@ const DemoPage = () => {
               />
             </div>
             <div className="video-info">
-              <h3>{selectedVideo.title}</h3>
+              <h3>{selectedVideo.titleGu} ({selectedVideo.titleEn})</h3>
               <div className="video-meta">
-                <span className="badge badge-emerald">Free Demo</span>
-                {selectedVideo.duration && (
-                  <span className="video-duration">
-                    <Clock size={13} /> {selectedVideo.duration}
-                  </span>
+                {selectedVideo.isFree ? (
+                  <span className="badge badge-emerald">Free Demo</span>
+                ) : (
+                  <span className="badge badge-indigo">Premium Chapter</span>
                 )}
               </div>
-              {selectedVideo.description && (
-                <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', marginTop: '8px' }}>
-                  {selectedVideo.description}
-                </p>
-              )}
             </div>
           </div>
         </div>
@@ -163,51 +162,15 @@ const DemoPage = () => {
           </div>
         ) : (
           <>
-            {/* Demo lectures */}
-            {demoContent.length > 0 ? (
-              <div className="content-group">
-                <div className="content-group-header">
-                  <Play size={18} fill="currentColor" style={{ color: 'var(--accent-emerald)' }} />
-                  <h2>Free Demo Lectures</h2>
-                  <span className="badge badge-emerald">{demoContent.length} free</span>
-                </div>
-                <div className="content-list">
-                  {demoContent.map((item, idx) => (
-                    <div
-                      key={item._id}
-                      className={`content-item ${selectedVideo?._id === item._id ? 'selected' : ''}`}
-                      onClick={() => setSelectedVideo(item)}
-                      role="button"
-                      tabIndex={0}
-                      id={`demo-item-${item._id}`}
-                    >
-                      <div className="content-item-num">{String(idx + 1).padStart(2, '0')}</div>
-                      <div className="content-item-icon">
-                        <Play size={15} />
-                      </div>
-                      <div className="content-item-info">
-                        <span className="content-item-title">{item.title}</span>
-                        {item.duration && (
-                          <div className="content-item-meta">
-                            <span><Clock size={11} /> {item.duration}</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <div className="empty-content">
-                <span style={{ fontSize: '3rem' }}>📚</span>
-                <h3>No Demo Lectures Yet</h3>
-                <p>The teacher is preparing demo content for {normSubject}. Check back soon!</p>
-              </div>
-            )}
-
             {/* Unlock Full Course Section */}
             <div className="unlock-course-section">
-              <ChapterList chapters={chapters} subject={normSubject} isPurchased={isPurchased} courseId={course?._id} />
+              <ChapterList 
+                chapters={chapters} 
+                subject={normSubject} 
+                isPurchased={isPurchased} 
+                courseId={course?._id} 
+                onChapterClick={(ch) => setSelectedVideo(ch)}
+              />
             </div>
           </>
         )}

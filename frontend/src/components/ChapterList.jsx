@@ -14,46 +14,49 @@ import './ChapterList.css'
  *   isPurchased — boolean: true → show play icons; false → show lock icons
  *   courseId    — MongoDB _id of the course (used for payment redirect)
  */
-const ChapterList = ({ chapters = [], subject, isPurchased = false, courseId }) => {
+const ChapterList = ({ chapters = [], subject, isPurchased = false, courseId, onChapterClick }) => {
   const navigate = useNavigate()
 
-  const class11 = chapters.filter((c) => c.class === 11)
-  const class12 = chapters.filter((c) => c.class === 12)
+  const class11 = chapters.filter((c) => c.classLevel === 11)
+  const class12 = chapters.filter((c) => c.classLevel === 12)
 
   const handleChapterClick = (ch) => {
-    if (!isPurchased) {
+    if (!isPurchased && !ch.isFree) {
       toast('Please purchase the course to access full content', { icon: '🔒' })
       navigate(`/course/${subject}`)
     } else {
-      navigate(`/course/${subject}`)
+      if (onChapterClick) onChapterClick(ch)
+      else navigate(`/course/${subject}`)
     }
   }
 
-  const renderChapter = (ch) => (
+  const renderChapter = (ch) => {
+    const isAccessible = isPurchased || ch.isFree;
+    return (
     <div
-      key={ch.chapter}
-      className={`chapter-card ${isPurchased ? 'chapter-unlocked' : 'chapter-locked'}`}
-      id={`chapter-${subject}-${ch.chapter}`}
+      key={ch._id}
+      className={`chapter-card ${isAccessible ? 'chapter-unlocked' : 'chapter-locked'}`}
+      id={`chapter-${subject}-${ch.chapterNumber}`}
       onClick={() => handleChapterClick(ch)}
       role="button"
       tabIndex={0}
       onKeyDown={(e) => e.key === 'Enter' && handleChapterClick(ch)}
-      title={isPurchased ? `Play Chapter ${ch.chapter}` : 'Purchase to unlock'}
+      title={isAccessible ? `Play Chapter ${ch.chapterNumber}` : 'Purchase to unlock'}
     >
       {/* Chapter number badge */}
       <div className="chapter-card-num">
-        {String(ch.chapter).padStart(2, '0')}
+        {String(ch.chapterNumber).padStart(2, '0')}
       </div>
 
       {/* Chapter titles */}
       <div className="chapter-card-content">
-        <h4 className="chapter-title-gu">{ch.title}</h4>
+        <h4 className="chapter-title-gu">{ch.titleGu}</h4>
         <p className="chapter-title-en">{ch.titleEn}</p>
       </div>
 
       {/* Lock / Play icon */}
-      <div className={`chapter-state-icon ${isPurchased ? 'state-play' : 'state-lock'}`}>
-        {isPurchased ? (
+      <div className={`chapter-state-icon ${isAccessible ? 'state-play' : 'state-lock'}`}>
+        {isAccessible ? (
           <>
             <Play size={14} fill="currentColor" />
             <span>Watch</span>
@@ -66,7 +69,7 @@ const ChapterList = ({ chapters = [], subject, isPurchased = false, courseId }) 
         )}
       </div>
     </div>
-  )
+  )}
 
   const renderGroup = (groupChapters, classLabel) => (
     <div className="chapter-group" key={classLabel}>

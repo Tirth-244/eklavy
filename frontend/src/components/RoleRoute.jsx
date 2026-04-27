@@ -1,7 +1,7 @@
 import { Navigate, Outlet } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
-const RoleRoute = ({ role }) => {
+const RoleRoute = ({ role, fallback = '/home' }) => {
   const { user, loading } = useAuth()
 
   if (loading) {
@@ -13,7 +13,7 @@ const RoleRoute = ({ role }) => {
   }
 
   if (!user) return <Navigate to="/login" replace />
-  if (user.role !== role) return <Navigate to="/home" replace />
+  if (user.role !== role) return <Navigate to={fallback} replace />
 
   return <Outlet />
 }

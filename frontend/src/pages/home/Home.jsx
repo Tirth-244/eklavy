@@ -54,7 +54,17 @@ const Home = () => {
 
   // If backend returns courses, map them; otherwise show placeholder cards from meta
   const displaySubjects = courses.length > 0
-    ? courses.map((c) => ({ ...c, meta: SUBJECT_META[c.subject] }))
+    ? courses.map((c) => ({
+        ...c,
+        meta: SUBJECT_META[c.subject] || {
+          icon: BookOpen,
+          color: '#6366f1',
+          glow: 'rgba(99, 102, 241, 0.4)',
+          gradient: 'linear-gradient(135deg, #6366f1, #818cf8)',
+          desc: 'Comprehensive curriculum and expert guidance.',
+          emoji: '📚',
+        }
+      }))
     : Object.entries(SUBJECT_META).map(([subject, meta]) => ({ subject, meta, price: 999 }))
 
   return (

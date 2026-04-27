@@ -14,6 +14,9 @@ import purchaseRoutes from './routes/purchaseRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
 import progressRoutes from './routes/progressRoutes.js';
 import uploadRoutes from './routes/uploadRoutes.js';
+import subjectRoutes from './routes/subjectRoutes.js';
+import chapterRoutes from './routes/chapterRoutes.js';
+import studentRoutes from './routes/studentRoutes.js';
 
 // Import middleware
 import errorHandler from './middleware/errorHandler.js';
@@ -45,6 +48,9 @@ app.use('/api/purchase', purchaseRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/progress', progressRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/subjects', subjectRoutes);
+app.use('/api/chapters', chapterRoutes);
+app.use('/api/students', studentRoutes);
 
 // ── Health Check ──────────────────────────────────────────────────────────────
 app.get('/api/health', (req, res) => {
@@ -61,6 +67,7 @@ app.use('*', (req, res) => {
 });
 
 // ── Global Error Handler (must be last) ───────────────────────────────────────
+app.use((req, res, next) => { const originalSend = res.send; res.send = function (data) { if (res.statusCode === 403) console.log("403 ON ROUTE:", req.method, req.originalUrl, data); return originalSend.apply(this, arguments); }; next(); });
 app.use(errorHandler);
 
 // ── Start Server ──────────────────────────────────────────────────────────────
