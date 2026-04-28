@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import ProtectedRoute from '../components/ProtectedRoute'
+import PublicRoute from '../components/PublicRoute'
 import RoleRoute from '../components/RoleRoute'
 
 import Login from '../pages/auth/Login'
@@ -14,10 +15,12 @@ import PaymentSuccess from '../pages/payment/PaymentSuccess'
 
 const AppRouter = () => (
   <Routes>
-    {/* ── Public routes (no login required) ── */}
-    <Route path="/" element={<Home />} />
-    <Route path="/login" element={<Login />} />
-    <Route path="/signup" element={<Signup />} />
+    {/* ── Public routes (redirects to /home if logged in) ── */}
+    <Route element={<PublicRoute />}>
+      <Route path="/" element={<Home />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/signup" element={<Signup />} />
+    </Route>
 
     {/* ── Protected user home ── */}
     <Route path="/home" element={

@@ -547,6 +547,7 @@ const TeacherDashboard = () => {
                           <tr>
                             <th>Name</th>
                             <th>Email</th>
+                            <th>Purchased Courses</th>
                             <th>Joined Date</th>
                             <th>Action</th>
                           </tr>
@@ -556,6 +557,16 @@ const TeacherDashboard = () => {
                             <tr key={st._id}>
                               <td>{st.name}</td>
                               <td>{st.email}</td>
+                              <td>
+                                {st.purchasedSubjects?.length > 0 
+                                  ? st.purchasedSubjects.map(sub => (
+                                      <span key={sub} className={`badge badge-${sub.toLowerCase() === 'physics' ? 'indigo' : sub.toLowerCase() === 'chemistry' ? 'emerald' : 'gold'}`} style={{ marginRight: '4px' }}>
+                                        {sub}
+                                      </span>
+                                    ))
+                                  : <span className="badge badge-rose">None</span>
+                                }
+                              </td>
                               <td>{new Date(st.createdAt).toLocaleDateString('en-IN')}</td>
                               <td>
                                 <button
@@ -568,7 +579,7 @@ const TeacherDashboard = () => {
                             </tr>
                           ))}
                           {studentsList.length === 0 && (
-                            <tr><td colSpan="4" style={{ textAlign: 'center', padding: '24px' }}>No students found.</td></tr>
+                            <tr><td colSpan="5" style={{ textAlign: 'center', padding: '24px' }}>No enrolled students found.</td></tr>
                           )}
                         </tbody>
                       </table>

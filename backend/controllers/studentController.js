@@ -7,21 +7,36 @@ import asyncHandler from '../utils/asyncHandler.js';
 
 // GET /api/students
 export const getAllStudents = asyncHandler(async (req, res) => {
-  const students = await User.find({ role: 'student' }).select('-password').sort({ createdAt: -1 });
-  res.status(200).json({ success: true, data: students });
+  const students = await User.find({ role: 'student' })
+    .select('-password')
+    .sort({ createdAt: -1 })
+    .lean();
+
+  const allPurchases = await Purchase.find({ paymentStatus: 'completed' }).populate('courseId');
+
+  const enrolledStudents = students.map(student => {
+    const studentPurchases = allPurchases.filter(p => p.userId && p.userId.toString() === student._id.toString());
+    const purchasedSubjects = studentPurchases.map(p => p.courseId?.subject).filter(Boolean);
+    return {
+      ...student,
+      purchasedSubjects: [...new Set(purchasedSubjects)]
+    };
+  }).filter(st => st.purchasedSubjects.length > 0);
+
+  res.status(200).json({ success: true, data: enrolledStudents });
 });
 
 // GET /api/students/:id
 export const getStudentDetails = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const student = await User.findById(id).select('-password');
+  const student = await User.findById(id).select('-password').lean();
   if (!student) {
     return res.status(404).json({ success: false, message: 'Student not found' });
   }
 
-  // Find purchased courses
   const purchases = await Purchase.find({ userId: id, paymentStatus: 'completed' }).populate('courseId');
-  const purchasedSubjects = purchases.map(p => p.courseId?.subject).filter(Boolean);
+  const purchasedSubjects = [...new Set(purchases.map(p => p.courseId?.subject).filter(Boolean))];
+
 
   // Calculate progress per subject
   const progressData = [];
