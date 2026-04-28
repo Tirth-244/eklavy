@@ -34,7 +34,7 @@ export const register = asyncHandler(async (req, res) => {
 
   const existingUser = await User.findOne({ email });
   if (existingUser) {
-    return res.status(409).json({ success: false, message: 'Email already registered' });
+    return res.status(400).json({ success: false, message: 'User already exists. Please login instead.' });
   }
 
   const user = await User.create({ name, email, password, role: role || 'student' });
@@ -61,8 +61,12 @@ export const login = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
   const user = await User.findOne({ email }).select('+password');
-  if (!user || !(await user.comparePassword(password))) {
-    return res.status(401).json({ success: false, message: 'Invalid email or password' });
+  if (!user) {
+    return res.status(404).json({ success: false, message: 'User not found. Please register first.' });
+  }
+
+  if (!(await user.comparePassword(password))) {
+    return res.status(401).json({ success: false, message: 'Invalid credentials. Please check your password.' });
   }
 
   if (!user.isActive) {

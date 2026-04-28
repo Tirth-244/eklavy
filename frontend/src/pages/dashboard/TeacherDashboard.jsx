@@ -95,11 +95,14 @@ const TeacherDashboard = () => {
     if (activeTab === 'students') {
       if (studentId) {
         studentAPI.getById(studentId)
-          .then(res => setStudentDetails(res.data.data))
+          .then(res => setStudentDetails(res.data?.studentDetails || res.data?.data || res.data))
           .catch(() => setStudentDetails(null))
       } else {
         studentAPI.getAll()
-          .then(res => setStudentsList(res.data.data || []))
+          .then(res => {
+            const data = res.data?.students || res.data?.data || res.data || []
+            setStudentsList(Array.isArray(data) ? data : [])
+          })
           .catch(() => setStudentsList([]))
       }
     }
@@ -558,12 +561,8 @@ const TeacherDashboard = () => {
                               <td>{st.name}</td>
                               <td>{st.email}</td>
                               <td>
-                                {st.purchasedSubjects?.length > 0 
-                                  ? st.purchasedSubjects.map(sub => (
-                                      <span key={sub} className={`badge badge-${sub.toLowerCase() === 'physics' ? 'indigo' : sub.toLowerCase() === 'chemistry' ? 'emerald' : 'gold'}`} style={{ marginRight: '4px' }}>
-                                        {sub}
-                                      </span>
-                                    ))
+                                {st.purchasedCourses?.length > 0 
+                                  ? `${st.purchasedCourses.length} Course(s)`
                                   : <span className="badge badge-rose">None</span>
                                 }
                               </td>

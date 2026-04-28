@@ -94,7 +94,7 @@ const Home = () => {
             Study at your own pace with structured content designed for JEE, NEET & Board exams.
           </p>
           <div className="hero-cta">
-            <Link to="/course/Physics" className="btn btn-primary btn-lg" id="hero-explore-btn">
+            <Link to="/course/Physics/demo" className="btn btn-primary btn-lg" id="hero-explore-btn">
               Explore Courses
               <ArrowRight size={18} />
             </Link>

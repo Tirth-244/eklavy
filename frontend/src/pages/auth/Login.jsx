@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { Mail, Lock, Eye, EyeOff, Zap } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useAuth } from '../../context/AuthContext'
@@ -8,11 +8,19 @@ import './Auth.css'
 
 const Login = () => {
   const navigate = useNavigate()
+  const location = useLocation()
   const { login } = useAuth()
   const [form, setForm] = useState({ email: '', password: '' })
   const [showPass, setShowPass] = useState(false)
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState({})
+
+  useEffect(() => {
+    if (location.state?.message) {
+      toast.error(location.state.message, { id: 'redirect-msg' })
+      navigate(location.pathname, { replace: true, state: {} })
+    }
+  }, [location, navigate])
 
   const validate = () => {
     const e = {}
@@ -38,7 +46,11 @@ const Login = () => {
       }
     } catch (err) {
       const msg = err.response?.data?.message || 'Login failed. Please try again.'
-      toast.error(msg)
+      if (msg === 'User not found. Please register first.') {
+        navigate('/signup', { state: { message: msg } })
+      } else {
+        toast.error(msg)
+      }
     } finally {
       setLoading(false)
     }

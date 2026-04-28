@@ -10,20 +10,10 @@ export const getAllStudents = asyncHandler(async (req, res) => {
   const students = await User.find({ role: 'student' })
     .select('-password')
     .sort({ createdAt: -1 })
+    .populate('purchasedCourses', 'subject')
     .lean();
 
-  const allPurchases = await Purchase.find({ paymentStatus: 'completed' }).populate('courseId');
-
-  const enrolledStudents = students.map(student => {
-    const studentPurchases = allPurchases.filter(p => p.userId && p.userId.toString() === student._id.toString());
-    const purchasedSubjects = studentPurchases.map(p => p.courseId?.subject).filter(Boolean);
-    return {
-      ...student,
-      purchasedSubjects: [...new Set(purchasedSubjects)]
-    };
-  }).filter(st => st.purchasedSubjects.length > 0);
-
-  res.status(200).json({ success: true, data: enrolledStudents });
+  res.status(200).json({ success: true, data: students });
 });
 
 // GET /api/students/:id
@@ -35,7 +25,7 @@ export const getStudentDetails = asyncHandler(async (req, res) => {
   }
 
   const purchases = await Purchase.find({ userId: id, paymentStatus: 'completed' }).populate('courseId');
-  const purchasedSubjects = [...new Set(purchases.map(p => p.courseId?.subject).filter(Boolean))];
+  const purchasedSubjects = [...new Set(purchases.map(p => p.courseId ? p.courseId.subject : null).filter(Boolean))];
 
 
   // Calculate progress per subject
