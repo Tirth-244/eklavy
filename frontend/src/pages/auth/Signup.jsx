@@ -117,6 +117,7 @@ const Signup = () => {
                 placeholder="Arjun Sharma"
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
+                autoComplete="name"
               />
             </div>
             {errors.name && <span className="form-error">{errors.name}</span>}
@@ -133,6 +134,7 @@ const Signup = () => {
                 placeholder="you@example.com"
                 value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
+                autoComplete="email"
               />
             </div>
             {errors.email && <span className="form-error">{errors.email}</span>}
@@ -149,6 +151,7 @@ const Signup = () => {
                 placeholder="Min. 6 characters"
                 value={form.password}
                 onChange={(e) => setForm({ ...form, password: e.target.value })}
+                autoComplete="new-password"
               />
               <button
                 type="button"
