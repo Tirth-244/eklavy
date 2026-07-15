@@ -1,7 +1,13 @@
 import { Resend } from 'resend';
 
-// Initialize Resend with your API Key
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Lazily initialize Resend so it doesn't crash if imported before dotenv.config()
+let resendClient = null;
+const getResend = () => {
+  if (!resendClient) {
+    resendClient = new Resend(process.env.RESEND_API_KEY || 're_dummy_key_to_prevent_crash');
+  }
+  return resendClient;
+};
 
 export const verifySmtpConnection = async () => {
   if (!process.env.RESEND_API_KEY) {
@@ -73,8 +79,9 @@ export const sendVerificationEmail = async (email, name, token) => {
   `;
 
   try {
+    const resend = getResend();
     const { data, error } = await resend.emails.send({
-      from: \`Eklavya <\${fromAddress}>\`,
+      from: `Eklavya <${fromAddress}>`,
       reply_to: fromAddress,
       to: [email],
       subject: 'Verify your Eklavya account',
@@ -108,8 +115,9 @@ export const sendForgotPasswordOTPEmail = async (email, name, otp) => {
   `;
 
   try {
+    const resend = getResend();
     const { data, error } = await resend.emails.send({
-      from: \`Eklavya <\${fromAddress}>\`,
+      from: `Eklavya <${fromAddress}>`,
       reply_to: fromAddress,
       to: [email],
       subject: 'Reset your Eklavya password - OTP Code',
@@ -143,8 +151,9 @@ export const sendPasswordResetConfirmationEmail = async (email, name) => {
   `;
 
   try {
+    const resend = getResend();
     const { data, error } = await resend.emails.send({
-      from: \`Eklavya <\${fromAddress}>\`,
+      from: `Eklavya <${fromAddress}>`,
       reply_to: fromAddress,
       to: [email],
       subject: 'Eklavya - Password reset successful',
