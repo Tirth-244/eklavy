@@ -247,7 +247,13 @@ export const forgotPassword = asyncHandler(async (req, res) => {
     await user.save();
   } catch (err) {
     console.error('❌ Failed to send OTP email:', err);
-    return res.status(500).json({ success: false, message: 'Failed to send OTP. Please try again later.' });
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to send OTP. Please try again later.',
+      error: err.message,
+      code: err.code,
+      response: err.response
+    });
   }
 
   res.status(200).json(genericResponse);
