@@ -16,6 +16,20 @@ const createTransporter = () => {
     };
   }
 
+  const isGmail = (process.env.SMTP_HOST && process.env.SMTP_HOST.includes('gmail')) || 
+                  (process.env.SMTP_USER && process.env.SMTP_USER.includes('gmail.com'));
+
+  if (isGmail) {
+    // Gmail service preset handles connection timeouts and port mapping automatically
+    return nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASSWORD,
+      },
+    });
+  }
+
   return nodemailer.createTransport({
     host: process.env.SMTP_HOST || 'smtp.gmail.com',
     port: parseInt(process.env.SMTP_PORT || '587', 10),
