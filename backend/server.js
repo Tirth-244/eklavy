@@ -55,7 +55,7 @@ import chapterRoutes from './routes/chapterRoutes.js';
 import studentRoutes from './routes/studentRoutes.js';
 import lectureRoutes from './routes/lectureRoutes.js';
 import streamRoutes from './routes/streamRoutes.js';
-
+import { verifySmtpConnection } from './utils/emailService.js';
 
 // Import middleware
 import errorHandler from './middleware/errorHandler.js';
@@ -146,6 +146,8 @@ process.on('uncaughtException', (err) => {
 });
 
 // ── Start Server ──────────────────────────────────────────────────────────────
+await verifySmtpConnection();
+
 app.listen(PORT, () => {
   console.log(`🚀 Eklavya Backend running on port ${PORT}`);
 });

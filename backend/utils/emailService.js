@@ -1,4 +1,12 @@
 import nodemailer from 'nodemailer';
+import dns from 'dns';
+
+// 🔴 CRITICAL FIX FOR RENDER: Force IPv4 resolution globally for this process.
+// Node.js >= 18 defaults to 'verbatim' DNS resolution (often IPv6).
+// Render's network sometimes routes IPv6 traffic into blackholes, causing ETIMEDOUT.
+if (dns.setDefaultResultOrder) {
+  dns.setDefaultResultOrder('ipv4first');
+}
 
 // ── Task 2: Nodemailer Reliability ────────────────────────────────────────────
 
@@ -22,37 +30,24 @@ const createTransporter = () => {
     };
   }
 
-  const isGmail = (process.env.SMTP_HOST && process.env.SMTP_HOST.includes('gmail')) || 
-                  (process.env.SMTP_USER && process.env.SMTP_USER.includes('gmail.com'));
-
-  // BUG: logger/debug were missing, so SMTP failures on Render produced zero
-  //      diagnostic output. Locally, Gmail "just works" but Render may block
-  //      port 465 or the app-password may be wrong.
-  // FIX: Enable nodemailer's built-in logger and debug mode.
-  if (isGmail) {
-    // Gmail service preset handles connection timeouts and port mapping automatically
-    return nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASSWORD,
-      },
-      logger: true,
-      debug: true,
-    });
-  }
-
-  return nodemailer.createTransport({
+  const transporterConfig = {
     host: process.env.SMTP_HOST || 'smtp.gmail.com',
     port: parseInt(process.env.SMTP_PORT || '587', 10),
-    secure: process.env.SMTP_PORT === '465', // true for 465, false for other ports
+    secure: process.env.SMTP_PORT === '465', // false for 587 (uses STARTTLS)
     auth: {
       user: process.env.SMTP_USER,
       pass: process.env.SMTP_PASSWORD,
     },
+    // Required production timeouts to prevent ETIMEDOUT hanging
+    connectionTimeout: 10000, // 10s
+    greetingTimeout: 10000,   // 10s
+    socketTimeout: 15000,     // 15s
+    // Detailed but secure debug logging
     logger: true,
     debug: true,
-  });
+  };
+
+  return nodemailer.createTransport(transporterConfig);
 };
 
 // BUG: transporter.verify() was never called, so SMTP auth failures
@@ -60,12 +55,13 @@ const createTransporter = () => {
 //      first email send attempt failed — buried inside a catch that only
 //      logged a generic error.
 // FIX: Verify SMTP connection at startup. This surfaces Gmail auth
-//      rejections immediately in Render logs.
-(async function verifySmtpConnection() {
+//      rejections immediately in Render logs before accepting requests.
+export const verifySmtpConnection = async () => {
   try {
     const transporter = createTransporter();
     await transporter.verify();
     console.log('✅ SMTP transporter verified — ready to send emails');
+    return true;
   } catch (err) {
     console.error('❌ SMTP transporter verification FAILED');
     console.error('   Error name:', err.name);
@@ -75,8 +71,9 @@ const createTransporter = () => {
     console.error('   Error response:', err.response);
     console.error('   Error responseCode:', err.responseCode);
     console.error('   Full error:', err);
+    return false;
   }
-})();
+};
 
 /**
  * Base HTML Template Wrapper for Eklavya
