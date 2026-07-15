@@ -1,40 +1,12 @@
 import nodemailer from 'nodemailer';
-import dns from 'dns';
-// import { Resend } from 'resend';
-
-// 🔴 CRITICAL FIX FOR RENDER: Force IPv4 resolution globally for this process.
-if (dns.setDefaultResultOrder) {
-  dns.setDefaultResultOrder('ipv4first');
-}
+import { google } from 'googleapis';
 
 // ==========================================
-// RESEND IMPLEMENTATION (Currently Commented Out)
+// NODEMAILER WITH GMAIL API (OAuth2)
 // ==========================================
-/*
-let resendClient = null;
-const getResend = () => {
-  if (!resendClient) {
-    resendClient = new Resend(process.env.RESEND_API_KEY || 're_dummy_key_to_prevent_crash');
-  }
-  return resendClient;
-};
-
-export const verifySmtpConnection = async () => {
-  if (!process.env.RESEND_API_KEY) {
-    console.warn('⚠️ RESEND_API_KEY is missing.');
-    return false;
-  }
-  console.log('✅ Email service initialized with Resend');
-  return true;
-};
-*/
-
-// ==========================================
-// NODEMAILER IMPLEMENTATION (Active)
-// ==========================================
-const createTransporter = () => {
-  if (!process.env.SMTP_USER || !process.env.SMTP_PASSWORD) {
-    console.warn('⚠️ SMTP credentials not fully configured. Email service will run in sandbox/log mode.');
+const createTransporter = async () => {
+  if (!process.env.GOOGLE_REFRESH_TOKEN) {
+    console.warn('⚠️ Google OAuth Refresh Token missing. Email service will run in sandbox/log mode.');
     return {
       sendMail: async (options) => {
         console.log('✉️ [Mock Email Sent]');
@@ -46,27 +18,41 @@ const createTransporter = () => {
     };
   }
 
-  return nodemailer.createTransport({
-    host: process.env.SMTP_HOST || 'smtp.gmail.com',
-    port: parseInt(process.env.SMTP_PORT || '587', 10),
-    secure: process.env.SMTP_PORT === '465',
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASSWORD,
-    },
-    connectionTimeout: 10000,
-    greetingTimeout: 10000,
-    socketTimeout: 15000,
-    logger: true,
-    debug: true,
-  });
+  try {
+    const oAuth2Client = new google.auth.OAuth2(
+      process.env.GOOGLE_CLIENT_ID,
+      process.env.GOOGLE_CLIENT_SECRET,
+      'https://developers.google.com/oauthplayground'
+    );
+
+    oAuth2Client.setCredentials({ refresh_token: process.env.GOOGLE_REFRESH_TOKEN });
+
+    // Grab the active access token
+    const accessTokenResponse = await oAuth2Client.getAccessToken();
+    const accessToken = accessTokenResponse?.token;
+
+    return nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        type: 'OAuth2',
+        user: process.env.SMTP_USER || 'tithu244@gmail.com',
+        clientId: process.env.GOOGLE_CLIENT_ID,
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+        refreshToken: process.env.GOOGLE_REFRESH_TOKEN,
+        accessToken: accessToken,
+      },
+    });
+  } catch (error) {
+    console.error('❌ Failed to create Google OAuth Transporter:', error.message);
+    throw error;
+  }
 };
 
 export const verifySmtpConnection = async () => {
   try {
-    const transporter = createTransporter();
+    const transporter = await createTransporter();
     await transporter.verify();
-    console.log('✅ SMTP transporter verified — ready to send emails');
+    console.log('✅ SMTP transporter (OAuth2) verified — ready to send emails via Gmail API');
     return true;
   } catch (err) {
     console.error('❌ SMTP transporter verification FAILED', err.message);
@@ -134,27 +120,7 @@ export const sendVerificationEmail = async (email, name, token) => {
     <p style="color: #555555;">This verification link will expire in 24 hours.</p>
   `;
 
-  // === RESEND ===
-  /*
-  try {
-    const resend = getResend();
-    const { data, error } = await resend.emails.send({
-      from: \`Eklavya <\${fromAddress}>\`,
-      reply_to: fromAddress,
-      to: [email],
-      subject: 'Verify your Eklavya account',
-      html: getBaseTemplate('Verify Email Address', content),
-    });
-    if (error) throw new Error(error.message);
-    return data;
-  } catch (err) {
-    console.error('❌ Verification email FAILED (Resend):', err.message);
-    throw err;
-  }
-  */
-
-  // === NODEMAILER ===
-  const transporter = createTransporter();
+  const transporter = await createTransporter();
   const mailOptions = {
     from: `"Eklavya" <${fromAddress}>`,
     replyTo: fromAddress,
@@ -189,27 +155,7 @@ export const sendForgotPasswordOTPEmail = async (email, name, otp) => {
     <p style="color: #555555;">This OTP code is valid for <strong>10 minutes</strong>. If you did not request this, please secure your account or ignore this email.</p>
   `;
 
-  // === RESEND ===
-  /*
-  try {
-    const resend = getResend();
-    const { data, error } = await resend.emails.send({
-      from: \`Eklavya <\${fromAddress}>\`,
-      reply_to: fromAddress,
-      to: [email],
-      subject: 'Reset your Eklavya password - OTP Code',
-      html: getBaseTemplate('Reset Your Password', content),
-    });
-    if (error) throw new Error(error.message);
-    return data;
-  } catch (err) {
-    console.error('❌ OTP email FAILED (Resend):', err.message);
-    throw err;
-  }
-  */
-
-  // === NODEMAILER ===
-  const transporter = createTransporter();
+  const transporter = await createTransporter();
   const mailOptions = {
     from: `"Eklavya" <${fromAddress}>`,
     replyTo: fromAddress,
@@ -246,27 +192,7 @@ export const sendPasswordResetConfirmationEmail = async (email, name) => {
     </div>
   `;
 
-  // === RESEND ===
-  /*
-  try {
-    const resend = getResend();
-    const { data, error } = await resend.emails.send({
-      from: \`Eklavya <\${fromAddress}>\`,
-      reply_to: fromAddress,
-      to: [email],
-      subject: 'Eklavya - Password reset successful',
-      html: getBaseTemplate('Password Reset Successful', content),
-    });
-    if (error) throw new Error(error.message);
-    return data;
-  } catch (err) {
-    console.error('❌ Password reset confirmation email FAILED (Resend):', err.message);
-    throw err;
-  }
-  */
-
-  // === NODEMAILER ===
-  const transporter = createTransporter();
+  const transporter = await createTransporter();
   const mailOptions = {
     from: `"Eklavya" <${fromAddress}>`,
     replyTo: fromAddress,
