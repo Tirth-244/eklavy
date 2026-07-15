@@ -1,21 +1,12 @@
-import nodemailer from 'nodemailer';
 import { google } from 'googleapis';
 
 // ==========================================
-// NODEMAILER WITH GMAIL API (OAuth2)
+// GMAIL REST API (100% HTTPS, Bypasses Render Firewalls)
 // ==========================================
-const createTransporter = async () => {
+const createGmailClient = async () => {
   if (!process.env.GOOGLE_REFRESH_TOKEN) {
     console.warn('⚠️ Google OAuth Refresh Token missing. Email service will run in sandbox/log mode.');
-    return {
-      sendMail: async (options) => {
-        console.log('✉️ [Mock Email Sent]');
-        console.log(`To: ${options.to}`);
-        console.log(`Subject: ${options.subject}`);
-        return { messageId: 'mock-id-' + Date.now() };
-      },
-      verify: async () => true
-    };
+    return null;
   }
 
   try {
@@ -27,35 +18,63 @@ const createTransporter = async () => {
 
     oAuth2Client.setCredentials({ refresh_token: process.env.GOOGLE_REFRESH_TOKEN });
 
-    // Grab the active access token
-    const accessTokenResponse = await oAuth2Client.getAccessToken();
-    const accessToken = accessTokenResponse?.token;
-
-    return nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        type: 'OAuth2',
-        user: process.env.SMTP_USER || 'tithu244@gmail.com',
-        clientId: process.env.GOOGLE_CLIENT_ID,
-        clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-        refreshToken: process.env.GOOGLE_REFRESH_TOKEN,
-        accessToken: accessToken,
-      },
-    });
+    // Creates the Gmail API client which communicates over HTTPS port 443
+    return google.gmail({ version: 'v1', auth: oAuth2Client });
   } catch (error) {
-    console.error('❌ Failed to create Google OAuth Transporter:', error.message);
+    console.error('❌ Failed to create Google OAuth Client:', error.message);
     throw error;
   }
 };
 
+/**
+ * Creates a raw MIME Base64URL string required by the Gmail API
+ */
+const makeRawEmail = (to, from, subject, html) => {
+  const str = [
+    `To: ${to}`,
+    `From: Eklavya <${from}>`,
+    `Subject: =?utf-8?B?${Buffer.from(subject).toString('base64')}?=`,
+    `Content-Type: text/html; charset="UTF-8"`,
+    `MIME-Version: 1.0`,
+    ``,
+    html
+  ].join('\r\n');
+  return Buffer.from(str).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+};
+
+const sendEmailViaAPI = async (to, from, subject, html) => {
+  const gmail = await createGmailClient();
+  
+  if (!gmail) {
+    console.log('✉️ [Mock Email Sent]');
+    console.log(`To: ${to}`);
+    console.log(`Subject: ${subject}`);
+    return { id: 'mock-id-' + Date.now() };
+  }
+
+  const raw = makeRawEmail(to, from, subject, html);
+
+  const res = await gmail.users.messages.send({
+    userId: 'me',
+    requestBody: {
+      raw: raw
+    }
+  });
+  
+  return res.data;
+};
+
 export const verifySmtpConnection = async () => {
   try {
-    const transporter = await createTransporter();
-    await transporter.verify();
-    console.log('✅ SMTP transporter (OAuth2) verified — ready to send emails via Gmail API');
+    const gmail = await createGmailClient();
+    if (gmail) {
+      // Small test request to check if token is valid
+      await gmail.users.getProfile({ userId: 'me' });
+      console.log('✅ Gmail REST API verified — ready to send emails over HTTPS');
+    }
     return true;
   } catch (err) {
-    console.error('❌ SMTP transporter verification FAILED', err.message);
+    console.error('❌ Gmail REST API verification FAILED', err.message);
     return false;
   }
 };
@@ -120,20 +139,9 @@ export const sendVerificationEmail = async (email, name, token) => {
     <p style="color: #555555;">This verification link will expire in 24 hours.</p>
   `;
 
-  const transporter = await createTransporter();
-  const mailOptions = {
-    from: `"Eklavya" <${fromAddress}>`,
-    replyTo: fromAddress,
-    to: email,
-    subject: 'Verify your Eklavya account',
-    text: `Welcome to Eklavya, ${name}! Verify your email by visiting: ${verifyUrl}`,
-    html: getBaseTemplate('Verify Email Address', content),
-    headers: { 'X-Priority': '1', 'X-Mailer': 'Eklavya Platform' },
-  };
-
   try {
-    const info = await transporter.sendMail(mailOptions);
-    console.log('✅ Verification email sent successfully to:', email);
+    const info = await sendEmailViaAPI(email, fromAddress, 'Verify your Eklavya account', getBaseTemplate('Verify Email Address', content));
+    console.log('✅ Verification email sent successfully via Gmail API to:', email);
     return info;
   } catch (err) {
     console.error('❌ Verification email FAILED:', err.message);
@@ -155,20 +163,9 @@ export const sendForgotPasswordOTPEmail = async (email, name, otp) => {
     <p style="color: #555555;">This OTP code is valid for <strong>10 minutes</strong>. If you did not request this, please secure your account or ignore this email.</p>
   `;
 
-  const transporter = await createTransporter();
-  const mailOptions = {
-    from: `"Eklavya" <${fromAddress}>`,
-    replyTo: fromAddress,
-    to: email,
-    subject: 'Reset your Eklavya password - OTP Code',
-    text: `Hello ${name}, your Eklavya password reset OTP is: ${otp}. It is valid for 10 minutes.`,
-    html: getBaseTemplate('Reset Your Password', content),
-    headers: { 'X-Priority': '1', 'X-Mailer': 'Eklavya Platform' },
-  };
-
   try {
-    const info = await transporter.sendMail(mailOptions);
-    console.log('✅ OTP email sent successfully to:', email);
+    const info = await sendEmailViaAPI(email, fromAddress, 'Reset your Eklavya password - OTP Code', getBaseTemplate('Reset Your Password', content));
+    console.log('✅ OTP email sent successfully via Gmail API to:', email);
     return info;
   } catch (err) {
     console.error('❌ OTP email FAILED:', err.message);
@@ -192,20 +189,9 @@ export const sendPasswordResetConfirmationEmail = async (email, name) => {
     </div>
   `;
 
-  const transporter = await createTransporter();
-  const mailOptions = {
-    from: `"Eklavya" <${fromAddress}>`,
-    replyTo: fromAddress,
-    to: email,
-    subject: 'Eklavya - Password reset successful',
-    text: `Hello ${name}, your Eklavya password has been successfully updated.`,
-    html: getBaseTemplate('Password Reset Successful', content),
-    headers: { 'X-Priority': '1', 'X-Mailer': 'Eklavya Platform' },
-  };
-
   try {
-    const info = await transporter.sendMail(mailOptions);
-    console.log('✅ Password reset confirmation email sent successfully to:', email);
+    const info = await sendEmailViaAPI(email, fromAddress, 'Eklavya - Password reset successful', getBaseTemplate('Password Reset Successful', content));
+    console.log('✅ Password reset confirmation email sent successfully via Gmail API to:', email);
     return info;
   } catch (err) {
     console.error('❌ Password reset confirmation email FAILED:', err.message);
