@@ -5,6 +5,10 @@ import RoleRoute from '../components/RoleRoute'
 
 import Login from '../pages/auth/Login'
 import Signup from '../pages/auth/Signup'
+import VerifyEmail from '../pages/auth/VerifyEmail'
+import ForgotPassword from '../pages/auth/ForgotPassword'
+import VerifyOtp from '../pages/auth/VerifyOtp'
+import ResetPassword from '../pages/auth/ResetPassword'
 import Home from '../pages/home/Home'
 import UserHome from '../pages/home/UserHome'
 import CoursePage from '../pages/course/CoursePage'
@@ -20,6 +24,10 @@ const AppRouter = () => (
       <Route path="/" element={<Home />} />
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
+      <Route path="/verify-email" element={<VerifyEmail />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/verify-otp" element={<VerifyOtp />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
     </Route>
 
     {/* ── Protected user home ── */}

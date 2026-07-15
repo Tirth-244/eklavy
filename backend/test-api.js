@@ -10,7 +10,7 @@ mongoose.connect(process.env.MONGODB_URL).then(async () => {
     const token = jwt.sign({ id: admin._id, role: admin.role }, process.env.JWT_SECRET, { expiresIn: '1h' });
     
     try {
-        const res = await axios.get('http://localhost:5005/api/students', {
+        const res = await axios.get('http://localhost:5001/api/students', {
             headers: { Authorization: `Bearer ${token}` }
         });
         console.log("Students:", res.data);

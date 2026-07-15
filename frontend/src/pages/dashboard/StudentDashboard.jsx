@@ -39,7 +39,7 @@ const StudentDashboard = () => {
   }, [])
 
   const completedCount = progress.data?.length || 0
-  const subjects = ['Physics', 'Chemistry', 'Maths']
+  const subjects = ['Physics', 'Chemistry', 'Mathematics', 'Biology']
   const purchased = purchases.map((p) => p.courseId?.subject).filter(Boolean)
 
   return (
@@ -178,7 +178,7 @@ const StudentDashboard = () => {
                     >
                       <div className="dash-course-top">
                         <span className="dash-course-emoji">
-                          {s === 'Physics' ? '⚛️' : s === 'Chemistry' ? '🧪' : '📐'}
+                          {s === 'Physics' ? '⚛️' : s === 'Chemistry' ? '🧪' : s === 'Biology' ? '🧬' : '📐'}
                         </span>
                         <span className="badge badge-muted">Explore</span>
                       </div>

@@ -18,7 +18,15 @@ import './CoursePage.css'
 const SUBJECT_META = {
   Physics: { icon: Atom, color: '#6366f1', gradient: 'linear-gradient(135deg,#6366f1,#818cf8)', emoji: '⚛️' },
   Chemistry: { icon: FlaskConical, color: '#10b981', gradient: 'linear-gradient(135deg,#10b981,#34d399)', emoji: '🧪' },
-  Maths: { icon: Calculator, color: '#f59e0b', gradient: 'linear-gradient(135deg,#f59e0b,#fcd34d)', emoji: '📐' },
+  Mathematics: { icon: Calculator, color: '#f59e0b', gradient: 'linear-gradient(135deg,#f59e0b,#fcd34d)', emoji: '📐' },
+  Biology: { icon: BookOpen, color: '#14b8a6', gradient: 'linear-gradient(135deg,#14b8a6,#2dd4bf)', emoji: '🧬' },
+}
+
+const normalizeSubject = (value = 'Physics') => {
+  const raw = decodeURIComponent(value || 'Physics').trim()
+  const lower = raw.toLowerCase()
+  if (lower === 'maths' || lower === 'math' || lower === 'mathematics') return 'Mathematics'
+  return raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase()
 }
 
 const CoursePage = () => {
@@ -34,7 +42,7 @@ const CoursePage = () => {
   const [paying, setPaying] = useState(false)
   const [completedIds, setCompletedIds] = useState(new Set())
 
-  const normSubject = subject ? subject.charAt(0).toUpperCase() + subject.slice(1).toLowerCase() : 'Physics'
+  const normSubject = normalizeSubject(subject)
   const meta = SUBJECT_META[normSubject] || SUBJECT_META.Physics
 
   useEffect(() => {
@@ -42,8 +50,8 @@ const CoursePage = () => {
       setLoadingCourse(true)
       try {
         const [courseRes, chaptersRes] = await Promise.all([
-          courseAPI.getBySubject(subject),
-          chapterAPI.getBySubject(subject).catch(() => ({ data: { data: [] } })),
+          courseAPI.getBySubject(normSubject),
+          chapterAPI.getBySubject(normSubject).catch(() => ({ data: { data: [] } })),
         ])
         const fetchedCourse = courseRes.data.data
         setCourse(fetchedCourse)
@@ -72,7 +80,7 @@ const CoursePage = () => {
       }
     }
     fetchAll()
-  }, [subject, isAuthenticated])
+  }, [normSubject, isAuthenticated])
 
   const handleBuy = async () => {
     if (!isAuthenticated) {
@@ -87,14 +95,14 @@ const CoursePage = () => {
         amount: data.order.amount,
         currency: 'INR',
         name: 'Eklavya Education',
-        description: `${subject} Full Course`,
+        description: `${normSubject} Full Course`,
         order_id: data.order.id,
         handler: async (response) => {
           try {
             await paymentAPI.verify({ ...response, courseId: course._id })
             toast.success('Payment successful! Course unlocked 🎉')
             setIsPurchased(true)
-            const chaptersRes = await chapterAPI.getBySubject(subject)
+            const chaptersRes = await chapterAPI.getBySubject(normSubject)
             setChapters(chaptersRes.data.data || [])
           } catch {
             toast.error('Payment verification failed. Contact support.')
@@ -129,7 +137,7 @@ const CoursePage = () => {
     return (
       <div className="page-loader">
         <div className="spinner" />
-        <p>Loading {subject} course…</p>
+        <p>Loading {normSubject} course…</p>
       </div>
     )
   }
@@ -148,8 +156,8 @@ const CoursePage = () => {
             </div>
             <div>
               <div className="course-header-badge">{meta.emoji} 11th – 12th Science</div>
-              <h1 className="course-header-title">{subject}</h1>
-              <p className="course-header-desc">{course?.description || `Complete ${subject} curriculum for Board exams and competitive tests.`}</p>
+              <h1 className="course-header-title">{course?.subject || normSubject}</h1>
+              <p className="course-header-desc">{course?.description || `Complete ${normSubject} curriculum for Board exams and competitive tests.`}</p>
               <div className="course-header-meta">
                 <span><BookOpen size={14} /> {chapters.length} Chapters</span>
                 <span><Play size={14} /> {demoContent.length} Free</span>
@@ -173,7 +181,7 @@ const CoursePage = () => {
                 id="buy-course-btn"
               >
                 <ShoppingCart size={16} />
-                {paying ? 'Processing…' : `Buy ${subject} Course`}
+                {paying ? 'Processing…' : `Buy ${normSubject} Course`}
               </button>
             </div>
           )}

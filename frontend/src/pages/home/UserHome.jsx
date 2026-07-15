@@ -9,7 +9,8 @@ import './Home.css'
 const SUBJECT_CARDS = [
   { subject: 'Physics', icon: Atom, emoji: '⚛️', gradient: 'linear-gradient(135deg, #6366f1, #818cf8)', color: 'var(--physics-color)', glow: 'var(--physics-glow)' },
   { subject: 'Chemistry', icon: FlaskConical, emoji: '🧪', gradient: 'linear-gradient(135deg, #10b981, #34d399)', color: 'var(--chemistry-color)', glow: 'var(--chemistry-glow)' },
-  { subject: 'Maths', icon: Calculator, emoji: '📐', gradient: 'linear-gradient(135deg, #f59e0b, #fcd34d)', color: 'var(--maths-color)', glow: 'var(--maths-glow)' },
+  { subject: 'Mathematics', icon: Calculator, emoji: '📐', gradient: 'linear-gradient(135deg, #f59e0b, #fcd34d)', color: 'var(--maths-color)', glow: 'var(--maths-glow)' },
+  { subject: 'Biology', icon: BookOpen, emoji: '🧬', gradient: 'linear-gradient(135deg, #14b8a6, #2dd4bf)', color: '#14b8a6', glow: 'rgba(20, 184, 166, 0.35)' },
 ]
 
 const UserHome = () => {
@@ -43,10 +44,7 @@ const UserHome = () => {
   }, [user, isTeacher])
 
   const purchasedSubjects = purchases.map(p => p.courseId?.subject).filter(Boolean)
-  const displaySubjects = SUBJECT_CARDS.filter(c => 
-    purchasedSubjects.includes(c.subject) || 
-    (c.subject === 'Maths' && purchasedSubjects.includes('Mathematics'))
-  )
+  const displaySubjects = SUBJECT_CARDS.filter(c => purchasedSubjects.includes(c.subject))
 
   return (
     <div className="home">

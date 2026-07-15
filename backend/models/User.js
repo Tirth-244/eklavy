@@ -20,7 +20,6 @@ const userSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      required: [true, 'Password is required'],
       minlength: [6, 'Password must be at least 6 characters'],
       select: false, // never returned by default
     },
@@ -32,6 +31,43 @@ const userSchema = new mongoose.Schema(
     avatar: {
       type: String,
       default: '',
+    },
+    googleId: {
+      type: String,
+      default: '',
+    },
+    githubId: {
+      type: String,
+      default: '',
+    },
+    isVerified: {
+      type: Boolean,
+      default: false,
+    },
+    verificationToken: {
+      type: String,
+      default: '',
+    },
+    verificationTokenExpires: {
+      type: Date,
+    },
+    otp: {
+      type: String,
+      default: '',
+    },
+    otpExpires: {
+      type: Date,
+    },
+    otpAttempts: {
+      type: Number,
+      default: 0,
+    },
+    resetToken: {
+      type: String,
+      default: '',
+    },
+    resetTokenExpires: {
+      type: Date,
     },
     purchasedCourses: [
       {
@@ -49,7 +85,7 @@ const userSchema = new mongoose.Schema(
 
 // Hash password before saving
 userSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) return next();
+  if (!this.isModified('password') || !this.password) return next();
   const salt = await bcrypt.genSalt(12);
   this.password = await bcrypt.hash(this.password, salt);
   next();
@@ -57,6 +93,7 @@ userSchema.pre('save', async function (next) {
 
 // Compare password instance method
 userSchema.methods.comparePassword = async function (candidatePassword) {
+  if (!this.password) return false;
   return bcrypt.compare(candidatePassword, this.password);
 };
 

@@ -23,13 +23,21 @@ const SUBJECT_META = {
     desc: 'Organic, Inorganic & Physical Chemistry with reaction mechanisms',
     emoji: '🧪',
   },
-  Maths: {
+  Mathematics: {
     icon: Calculator,
     color: 'var(--maths-color)',
     glow: 'var(--maths-glow)',
     gradient: 'linear-gradient(135deg, #f59e0b, #fcd34d)',
     desc: 'Calculus, Algebra, Coordinate Geometry, Probability & Vectors',
     emoji: '📐',
+  },
+  Biology: {
+    icon: BookOpen,
+    color: '#14b8a6',
+    glow: 'rgba(20, 184, 166, 0.35)',
+    gradient: 'linear-gradient(135deg, #14b8a6, #2dd4bf)',
+    desc: 'Cell biology, plant physiology, genetics, ecology & human biology',
+    emoji: '🧬',
   },
 }
 

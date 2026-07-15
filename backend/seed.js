@@ -7,6 +7,11 @@ import User from './models/User.js';
 
 dotenv.config();
 
+const mongoUrl =
+  process.env.MONGODB_URL ||
+  process.env.MONGODB_URI ||
+  'mongodb://localhost:27017/eklavya';
+
 const demoData = [
   {
     subject: { name: 'Physics', label: 'ભૌતિક વિજ્ઞાન' },
@@ -49,7 +54,7 @@ const demoData = [
 const seedDB = async () => {
   try {
     console.log('Connecting to MongoDB...');
-    await mongoose.connect(process.env.MONGODB_URL);
+    await mongoose.connect(mongoUrl);
     console.log('✅ MongoDB Connected');
 
     // Get an admin/teacher user for the course reference
@@ -63,20 +68,21 @@ const seedDB = async () => {
       if (!subject) {
         subject = await Subject.create(data.subject);
         console.log(`Created Subject: ${subName}`);
-        
-        // Ensure Course exists so purchases work
-        const existingCourse = await Course.findOne({ subject: subName });
-        if (!existingCourse) {
-          await Course.create({
-            subject: subName,
-            description: `Complete syllabus for ${subName}`,
-            price: 999,
-            isActive: true,
-            teacher: adminUser ? adminUser._id : undefined,
-          });
-        }
       } else {
         console.log(`Subject already exists: ${subName}`);
+      }
+
+      // Ensure Course exists so purchases work, even when Subject already exists.
+      const existingCourse = await Course.findOne({ subject: subName });
+      if (!existingCourse) {
+        await Course.create({
+          subject: subName,
+          description: `Complete syllabus for ${subName}`,
+          price: 999,
+          isActive: true,
+          teacher: adminUser ? adminUser._id : undefined,
+        });
+        console.log(`Created Course: ${subName}`);
       }
 
       // 2. Create Chapters

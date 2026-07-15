@@ -3,6 +3,7 @@
  * Must be registered LAST in Express app (after all routes).
  */
 const errorHandler = (err, req, res, next) => {
+  console.error('💥 Error handler caught:', err);
   let statusCode = err.statusCode || res.statusCode === 200 ? 500 : res.statusCode;
   let message = err.message || 'Internal Server Error';
 

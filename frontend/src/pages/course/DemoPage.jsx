@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { Play, Clock, ArrowLeft, Lock, Unlock, Atom, FlaskConical, Calculator } from 'lucide-react'
+import { Play, Clock, ArrowLeft, Lock, Unlock, Atom, FlaskConical, Calculator, BookOpen } from 'lucide-react'
 import ReactPlayer from 'react-player'
 import Navbar from '../../components/Navbar'
 import ChapterList from '../../components/ChapterList'
@@ -24,20 +24,32 @@ const SUBJECT_META = {
     color: '#10b981',
     emoji: '🧪',
   },
-  Maths: {
+  Mathematics: {
     icon: Calculator,
     gradient: 'linear-gradient(135deg,#f59e0b,#fcd34d)',
     color: '#f59e0b',
     emoji: '📐',
   },
+  Biology: {
+    icon: BookOpen,
+    gradient: 'linear-gradient(135deg,#14b8a6,#2dd4bf)',
+    color: '#14b8a6',
+    emoji: '🧬',
+  },
+}
+
+const normalizeSubject = (value = 'Physics') => {
+  const raw = decodeURIComponent(value || 'Physics').trim()
+  const lower = raw.toLowerCase()
+  if (lower === 'maths' || lower === 'math' || lower === 'mathematics') return 'Mathematics'
+  return raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase()
 }
 
 const DemoPage = () => {
   const { subject } = useParams()
   const navigate = useNavigate()
   const { isAuthenticated } = useAuth()
-  // Normalise capitalisation: "physics" → "Physics"
-  const normSubject = subject.charAt(0).toUpperCase() + subject.slice(1).toLowerCase()
+  const normSubject = normalizeSubject(subject)
   const meta = SUBJECT_META[normSubject] || SUBJECT_META.Physics
 
   const [course, setCourse] = useState(null)
