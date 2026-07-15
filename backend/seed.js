@@ -7,9 +7,8 @@ import User from './models/User.js';
 
 dotenv.config();
 
-const mongoUrl =
+const MONGODB_URL =
   process.env.MONGODB_URL ||
-  process.env.MONGODB_URI ||
   'mongodb://localhost:27017/eklavya';
 
 const demoData = [
@@ -54,7 +53,7 @@ const demoData = [
 const seedDB = async () => {
   try {
     console.log('Connecting to MongoDB...');
-    await mongoose.connect(mongoUrl);
+    await mongoose.connect(MONGODB_URL);
     console.log('✅ MongoDB Connected');
 
     // Get an admin/teacher user for the course reference
