@@ -1,6 +1,6 @@
 import nodemailer from 'nodemailer';
 import dns from 'dns';
-// import { Resend } from 'resend';
+import { Resend } from 'resend';
 
 // 🔴 CRITICAL FIX FOR RENDER: Force IPv4 resolution globally for this process.
 if (dns.setDefaultResultOrder) {
@@ -8,9 +8,8 @@ if (dns.setDefaultResultOrder) {
 }
 
 // ==========================================
-// RESEND IMPLEMENTATION (Currently Commented Out)
+// RESEND IMPLEMENTATION (Active)
 // ==========================================
-/*
 let resendClient = null;
 const getResend = () => {
   if (!resendClient) {
@@ -27,11 +26,11 @@ export const verifySmtpConnection = async () => {
   console.log('✅ Email service initialized with Resend');
   return true;
 };
-*/
 
 // ==========================================
-// NODEMAILER IMPLEMENTATION (Active)
+// NODEMAILER IMPLEMENTATION (Currently Commented Out)
 // ==========================================
+/*
 const createTransporter = () => {
   if (!process.env.SMTP_USER || !process.env.SMTP_PASSWORD) {
     console.warn('⚠️ SMTP credentials not fully configured. Email service will run in sandbox/log mode.');
@@ -73,6 +72,7 @@ export const verifySmtpConnection = async () => {
     return false;
   }
 };
+*/
 
 /**
  * Base HTML Template Wrapper for Eklavya
@@ -121,7 +121,7 @@ const getBaseTemplate = (title, content) => {
  */
 export const sendVerificationEmail = async (email, name, token) => {
   const verifyUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/verify-email?token=${token}`;
-  const fromAddress = process.env.SMTP_USER || process.env.EMAIL_FROM || 'no-reply@eklavya.com';
+  const fromAddress = process.env.EMAIL_FROM || 'onboarding@resend.dev';
   
   const content = `
     <h2 style="color: #d97706; margin-top: 0;">Welcome to Eklavya, ${name}!</h2>
@@ -135,32 +135,32 @@ export const sendVerificationEmail = async (email, name, token) => {
   `;
 
   // === RESEND ===
-  /*
   try {
     const resend = getResend();
     const { data, error } = await resend.emails.send({
-      from: \`Eklavya <\${fromAddress}>\`,
+      from: `Eklavya <${fromAddress}>`,
       reply_to: fromAddress,
       to: [email],
       subject: 'Verify your Eklavya account',
       html: getBaseTemplate('Verify Email Address', content),
     });
     if (error) throw new Error(error.message);
+    console.log('✅ Verification email sent successfully to:', email);
     return data;
   } catch (err) {
     console.error('❌ Verification email FAILED (Resend):', err.message);
     throw err;
   }
-  */
 
   // === NODEMAILER ===
+  /*
   const transporter = createTransporter();
   const mailOptions = {
-    from: `"Eklavya" <${fromAddress}>`,
+    from: \`"Eklavya" <\${fromAddress}>\`,
     replyTo: fromAddress,
     to: email,
     subject: 'Verify your Eklavya account',
-    text: `Welcome to Eklavya, ${name}! Verify your email by visiting: ${verifyUrl}`,
+    text: \`Welcome to Eklavya, \${name}! Verify your email by visiting: \${verifyUrl}\`,
     html: getBaseTemplate('Verify Email Address', content),
     headers: { 'X-Priority': '1', 'X-Mailer': 'Eklavya Platform' },
   };
@@ -173,13 +173,14 @@ export const sendVerificationEmail = async (email, name, token) => {
     console.error('❌ Verification email FAILED:', err.message);
     throw err;
   }
+  */
 };
 
 /**
  * Send Forgot Password OTP Email
  */
 export const sendForgotPasswordOTPEmail = async (email, name, otp) => {
-  const fromAddress = process.env.SMTP_USER || process.env.EMAIL_FROM || 'no-reply@eklavya.com';
+  const fromAddress = process.env.EMAIL_FROM || 'onboarding@resend.dev';
 
   const content = `
     <h2 style="color: #d97706; margin-top: 0;">Password Reset Request</h2>
@@ -190,32 +191,32 @@ export const sendForgotPasswordOTPEmail = async (email, name, otp) => {
   `;
 
   // === RESEND ===
-  /*
   try {
     const resend = getResend();
     const { data, error } = await resend.emails.send({
-      from: \`Eklavya <\${fromAddress}>\`,
+      from: `Eklavya <${fromAddress}>`,
       reply_to: fromAddress,
       to: [email],
       subject: 'Reset your Eklavya password - OTP Code',
       html: getBaseTemplate('Reset Your Password', content),
     });
     if (error) throw new Error(error.message);
+    console.log('✅ OTP email sent successfully to:', email);
     return data;
   } catch (err) {
     console.error('❌ OTP email FAILED (Resend):', err.message);
     throw err;
   }
-  */
 
   // === NODEMAILER ===
+  /*
   const transporter = createTransporter();
   const mailOptions = {
-    from: `"Eklavya" <${fromAddress}>`,
+    from: \`"Eklavya" <\${fromAddress}>\`,
     replyTo: fromAddress,
     to: email,
     subject: 'Reset your Eklavya password - OTP Code',
-    text: `Hello ${name}, your Eklavya password reset OTP is: ${otp}. It is valid for 10 minutes.`,
+    text: \`Hello \${name}, your Eklavya password reset OTP is: \${otp}. It is valid for 10 minutes.\`,
     html: getBaseTemplate('Reset Your Password', content),
     headers: { 'X-Priority': '1', 'X-Mailer': 'Eklavya Platform' },
   };
@@ -228,13 +229,14 @@ export const sendForgotPasswordOTPEmail = async (email, name, otp) => {
     console.error('❌ OTP email FAILED:', err.message);
     throw err;
   }
+  */
 };
 
 /**
  * Send Password Reset Confirmation Email
  */
 export const sendPasswordResetConfirmationEmail = async (email, name) => {
-  const fromAddress = process.env.SMTP_USER || process.env.EMAIL_FROM || 'no-reply@eklavya.com';
+  const fromAddress = process.env.EMAIL_FROM || 'onboarding@resend.dev';
 
   const content = `
     <h2 style="color: #22c55e; margin-top: 0;">Password Changed Successfully!</h2>
@@ -247,32 +249,32 @@ export const sendPasswordResetConfirmationEmail = async (email, name) => {
   `;
 
   // === RESEND ===
-  /*
   try {
     const resend = getResend();
     const { data, error } = await resend.emails.send({
-      from: \`Eklavya <\${fromAddress}>\`,
+      from: `Eklavya <${fromAddress}>`,
       reply_to: fromAddress,
       to: [email],
       subject: 'Eklavya - Password reset successful',
       html: getBaseTemplate('Password Reset Successful', content),
     });
     if (error) throw new Error(error.message);
+    console.log('✅ Password reset confirmation email sent successfully to:', email);
     return data;
   } catch (err) {
     console.error('❌ Password reset confirmation email FAILED (Resend):', err.message);
     throw err;
   }
-  */
 
   // === NODEMAILER ===
+  /*
   const transporter = createTransporter();
   const mailOptions = {
-    from: `"Eklavya" <${fromAddress}>`,
+    from: \`"Eklavya" <\${fromAddress}>\`,
     replyTo: fromAddress,
     to: email,
     subject: 'Eklavya - Password reset successful',
-    text: `Hello ${name}, your Eklavya password has been successfully updated.`,
+    text: \`Hello \${name}, your Eklavya password has been successfully updated.\`,
     html: getBaseTemplate('Password Reset Successful', content),
     headers: { 'X-Priority': '1', 'X-Mailer': 'Eklavya Platform' },
   };
@@ -285,4 +287,5 @@ export const sendPasswordResetConfirmationEmail = async (email, name) => {
     console.error('❌ Password reset confirmation email FAILED:', err.message);
     throw err;
   }
+  */
 };
