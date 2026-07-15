@@ -56,36 +56,81 @@ const handleValidation = (req, res) => {
 };
 
 // ── POST /api/auth/register ──────────────────────────────────────────────────
+// Task 3: Registration Flow Tracing — logs every stage to pinpoint
+//         exactly where production fails on Render.
 export const register = asyncHandler(async (req, res) => {
-  if (handleValidation(req, res)) return;
+  console.log('\n📋 [REGISTER] ① Request received', { body: { ...req.body, password: '[REDACTED]' } });
+
+  if (handleValidation(req, res)) {
+    console.log('📋 [REGISTER] ✗ Validation failed');
+    return;
+  }
+  console.log('📋 [REGISTER] ② Validation passed');
 
   const { name, email, password, role } = req.body;
 
+  console.log('📋 [REGISTER] ③ Looking up existing user:', email);
   const existingUser = await User.findOne({ email });
   if (existingUser) {
+    console.log('📋 [REGISTER] ✗ User already exists:', email);
     return res.status(400).json({ success: false, message: 'User already exists. Please login instead.' });
   }
+  console.log('📋 [REGISTER] ④ No existing user found — proceeding');
 
   // Generate verification token
   const verificationToken = crypto.randomBytes(32).toString('hex');
   const verificationTokenExpires = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
+  console.log('📋 [REGISTER] ⑤ Verification token generated');
 
-  const user = await User.create({
-    name,
-    email,
-    password,
-    role: role || 'student',
-    isVerified: false,
-    verificationToken,
-    verificationTokenExpires,
-  });
-
+  // Task 4: Catch Mongoose validation & duplicate-key errors explicitly
+  // BUG: User.create() can throw a Mongoose ValidationError (e.g. email
+  //      format) or duplicate-key error (race condition). On Render these
+  //      were swallowed by the generic asyncHandler/errorHandler with no
+  //      clear log of what field failed.
+  // FIX: Wrap in try/catch and log the specific Mongoose error.
+  let user;
   try {
-    await sendVerificationEmail(email, name, verificationToken);
-  } catch (err) {
-    console.error('❌ Failed to send verification email on register:', err);
+    console.log('📋 [REGISTER] ⑥ Creating user in DB (password will be hashed by pre-save hook)');
+    user = await User.create({
+      name,
+      email,
+      password,
+      role: role || 'student',
+      isVerified: false,
+      verificationToken,
+      verificationTokenExpires,
+    });
+    console.log('📋 [REGISTER] ⑦ User created successfully, _id:', user._id);
+  } catch (dbErr) {
+    if (dbErr.code === 11000) {
+      console.error('📋 [REGISTER] ✗ Duplicate key error (race condition):', dbErr.keyValue);
+      return res.status(409).json({ success: false, message: 'Email already registered (duplicate key).' });
+    }
+    if (dbErr.name === 'ValidationError') {
+      console.error('📋 [REGISTER] ✗ Mongoose validation error:', dbErr.message);
+      return res.status(422).json({ success: false, message: dbErr.message });
+    }
+    console.error('📋 [REGISTER] ✗ DB error:', dbErr);
+    throw dbErr;
   }
 
+  console.log('📋 [REGISTER] ⑧ Sending verification email to:', email);
+  try {
+    await sendVerificationEmail(email, name, verificationToken);
+    console.log('📋 [REGISTER] ⑨ Verification email sent successfully');
+  } catch (err) {
+    // BUG: Original only logged a short message. On Render, the SMTP error
+    //      details (auth failure, port blocked) were lost.
+    // FIX: Log full error details but don't block registration.
+    console.error('❌ [REGISTER] ✗ Failed to send verification email');
+    console.error('   Error name:', err.name);
+    console.error('   Error message:', err.message);
+    console.error('   Error code:', err.code);
+    console.error('   Error response:', err.response);
+    console.error('   Error responseCode:', err.responseCode);
+  }
+
+  console.log('📋 [REGISTER] ⑩ Sending 201 response');
   res.status(201).json({
     success: true,
     message: 'Registration successful! A verification link has been sent to your email. Please verify your email to log in.',
