@@ -1,89 +1,19 @@
-import nodemailer from 'nodemailer';
-import dns from 'dns';
+import { Resend } from 'resend';
 
-// 🔴 CRITICAL FIX FOR RENDER: Force IPv4 resolution globally for this process.
-// Node.js >= 18 defaults to 'verbatim' DNS resolution (often IPv6).
-// Render's network sometimes routes IPv6 traffic into blackholes, causing ETIMEDOUT.
-if (dns.setDefaultResultOrder) {
-  dns.setDefaultResultOrder('ipv4first');
-}
+// Initialize Resend with your API Key
+const resend = new Resend(process.env.RESEND_API_KEY);
 
-// ── Task 2: Nodemailer Reliability ────────────────────────────────────────────
-
-// Create a transporter using SMTP configuration from environment variables
-const createTransporter = () => {
-  // If SMTP credentials aren't provided, use a mock or log warning
-  if (!process.env.SMTP_USER || !process.env.SMTP_PASSWORD) {
-    console.warn('⚠️ SMTP credentials not fully configured. Email service will run in sandbox/log mode.');
-    return {
-      sendMail: async (options) => {
-        console.log('✉️ [Mock Email Sent]');
-        console.log(`To: ${options.to}`);
-        console.log(`Subject: ${options.subject}`);
-        console.log(`Body Snippet: ${options.text || 'HTML content'}`);
-        return { messageId: 'mock-id-' + Date.now() };
-      },
-      verify: async () => {
-        console.warn('⚠️ Mock transporter — verify() skipped');
-        return true;
-      }
-    };
-  }
-
-  const transporterConfig = {
-    host: process.env.SMTP_HOST || 'smtp.gmail.com',
-    port: parseInt(process.env.SMTP_PORT || '587', 10),
-    secure: process.env.SMTP_PORT === '465', // false for 587 (uses STARTTLS)
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASSWORD,
-    },
-    // Required production timeouts to prevent ETIMEDOUT hanging
-    connectionTimeout: 10000, // 10s
-    greetingTimeout: 10000,   // 10s
-    socketTimeout: 15000,     // 15s
-    // Detailed but secure debug logging
-    logger: true,
-    debug: true,
-  };
-
-  return nodemailer.createTransport(transporterConfig);
-};
-
-// BUG: transporter.verify() was never called, so SMTP auth failures
-//      (wrong app-password, blocked port) were only discovered when the
-//      first email send attempt failed — buried inside a catch that only
-//      logged a generic error.
-// FIX: Verify SMTP connection at startup. This surfaces Gmail auth
-//      rejections immediately in Render logs before accepting requests.
 export const verifySmtpConnection = async () => {
-  try {
-    const transporter = createTransporter();
-    await transporter.verify();
-    console.log('✅ SMTP transporter verified — ready to send emails');
-    return true;
-  } catch (err) {
-    console.error('❌ SMTP transporter verification FAILED');
-    console.error('   Error name:', err.name);
-    console.error('   Error message:', err.message);
-    console.error('   Error code:', err.code);
-    console.error('   Error command:', err.command);
-    console.error('   Error response:', err.response);
-    console.error('   Error responseCode:', err.responseCode);
-    console.error('   Full error:', err);
+  if (!process.env.RESEND_API_KEY) {
+    console.warn('⚠️ RESEND_API_KEY is missing. Emails will not be sent.');
     return false;
   }
+  console.log('✅ Email service initialized with Resend');
+  return true;
 };
 
 /**
  * Base HTML Template Wrapper for Eklavya
- * BUG: The original template used dark backgrounds (#0f172a), complex CSS with
- *      gradients, box-shadows, and transitions. When sent from a personal Gmail
- *      (tithu244@gmail.com), this heavy HTML looks like a phishing/marketing email
- *      to Gmail's spam filter. Emails to the SAME account bypass spam filtering,
- *      which is why tithu244→tithu244 worked but tithu244→other didn't.
- * FIX: Use a clean, minimal, light-colored template. Gmail's spam filter is much
- *      more lenient with simple HTML emails from personal accounts.
  */
 const getBaseTemplate = (title, content) => {
   return `
@@ -129,13 +59,7 @@ const getBaseTemplate = (title, content) => {
  */
 export const sendVerificationEmail = async (email, name, token) => {
   const verifyUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/verify-email?token=${token}`;
-
-  // BUG: EMAIL_FROM was set to a different address than SMTP_USER.
-  //      Gmail REQUIRES the "from" address to match the authenticated user,
-  //      otherwise it silently rewrites it or rejects with auth errors.
-  //      Locally this was hidden because Gmail auto-corrected it.
-  // FIX: Always use SMTP_USER as the from address for Gmail.
-  const fromAddress = process.env.SMTP_USER || process.env.EMAIL_FROM || 'no-reply@eklavya.com';
+  const fromAddress = process.env.EMAIL_FROM || 'onboarding@resend.dev';
   
   const content = `
     <h2 style="color: #d97706; margin-top: 0;">Welcome to Eklavya, ${name}!</h2>
@@ -148,48 +72,24 @@ export const sendVerificationEmail = async (email, name, token) => {
     <p style="color: #555555;">This verification link will expire in 24 hours.</p>
   `;
 
-  const transporter = createTransporter();
-  // BUG: Emoji in subject line (🎓) + heavy HTML + "Eklavya Support" from a
-  //      personal Gmail = strong spam signals. Gmail delivers same-account
-  //      emails (tithu244→tithu244) bypassing spam filters, but cross-account
-  //      emails get flagged and land in spam.
-  // FIX: Remove emoji from subject, add replyTo, add envelope sender, add
-  //      List-Unsubscribe header — all improve Gmail spam score.
-  const mailOptions = {
-    from: `"Eklavya" <${fromAddress}>`,
-    replyTo: fromAddress,
-    to: email,
-    subject: 'Verify your Eklavya account',
-    text: `Welcome to Eklavya, ${name}! Verify your email by visiting: ${verifyUrl}`,
-    html: getBaseTemplate('Verify Email Address', content),
-    headers: {
-      'X-Priority': '1',
-      'X-Mailer': 'Eklavya Platform',
-    },
-  };
-
   try {
-    const info = await transporter.sendMail(mailOptions);
-    console.log('✅ Verification email sent successfully');
-    console.log('   Recipient:', email);
-    console.log('   Sender:', fromAddress);
-    console.log('   Subject:', mailOptions.subject);
-    console.log('   Verification URL:', verifyUrl);
-    console.log('   MessageId:', info.messageId);
-    console.log('   Accepted:', info.accepted);
-    console.log('   Rejected:', info.rejected);
-    return info;
+    const { data, error } = await resend.emails.send({
+      from: \`Eklavya <\${fromAddress}>\`,
+      reply_to: fromAddress,
+      to: [email],
+      subject: 'Verify your Eklavya account',
+      html: getBaseTemplate('Verify Email Address', content),
+    });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    console.log('✅ Verification email sent successfully to:', email);
+    return data;
   } catch (err) {
-    console.error('❌ Verification email FAILED');
-    console.error('   Recipient:', email);
-    console.error('   Error name:', err.name);
-    console.error('   Error message:', err.message);
-    console.error('   Error code:', err.code);
-    console.error('   Error command:', err.command);
-    console.error('   Error response:', err.response);
-    console.error('   Error responseCode:', err.responseCode);
-    console.error('   Error stack:', err.stack);
-    throw err; // re-throw so callers can handle it
+    console.error('❌ Verification email FAILED:', err.message);
+    throw err;
   }
 };
 
@@ -197,7 +97,7 @@ export const sendVerificationEmail = async (email, name, token) => {
  * Send Forgot Password OTP Email
  */
 export const sendForgotPasswordOTPEmail = async (email, name, otp) => {
-  const fromAddress = process.env.SMTP_USER || process.env.EMAIL_FROM || 'no-reply@eklavya.com';
+  const fromAddress = process.env.EMAIL_FROM || 'onboarding@resend.dev';
 
   const content = `
     <h2 style="color: #d97706; margin-top: 0;">Password Reset Request</h2>
@@ -207,39 +107,21 @@ export const sendForgotPasswordOTPEmail = async (email, name, otp) => {
     <p style="color: #555555;">This OTP code is valid for <strong>10 minutes</strong>. If you did not request this, please secure your account or ignore this email.</p>
   `;
 
-  const transporter = createTransporter();
-  const mailOptions = {
-    from: `"Eklavya" <${fromAddress}>`,
-    replyTo: fromAddress,
-    to: email,
-    subject: 'Reset your Eklavya password - OTP Code',
-    text: `Hello ${name}, your Eklavya password reset OTP is: ${otp}. It is valid for 10 minutes.`,
-    html: getBaseTemplate('Reset Your Password', content),
-    headers: {
-      'X-Priority': '1',
-      'X-Mailer': 'Eklavya Platform',
-    },
-  };
-
   try {
-    const info = await transporter.sendMail(mailOptions);
-    console.log('✅ OTP email sent successfully');
-    console.log('   Recipient:', email);
-    console.log('   Sender:', fromAddress);
-    console.log('   MessageId:', info.messageId);
-    console.log('   Accepted:', info.accepted);
-    console.log('   Rejected:', info.rejected);
-    return info;
+    const { data, error } = await resend.emails.send({
+      from: \`Eklavya <\${fromAddress}>\`,
+      reply_to: fromAddress,
+      to: [email],
+      subject: 'Reset your Eklavya password - OTP Code',
+      html: getBaseTemplate('Reset Your Password', content),
+    });
+
+    if (error) throw new Error(error.message);
+
+    console.log('✅ OTP email sent successfully to:', email);
+    return data;
   } catch (err) {
-    console.error('❌ OTP email FAILED');
-    console.error('   Recipient:', email);
-    console.error('   Error name:', err.name);
-    console.error('   Error message:', err.message);
-    console.error('   Error code:', err.code);
-    console.error('   Error command:', err.command);
-    console.error('   Error response:', err.response);
-    console.error('   Error responseCode:', err.responseCode);
-    console.error('   Error stack:', err.stack);
+    console.error('❌ OTP email FAILED:', err.message);
     throw err;
   }
 };
@@ -248,7 +130,7 @@ export const sendForgotPasswordOTPEmail = async (email, name, otp) => {
  * Send Password Reset Confirmation Email
  */
 export const sendPasswordResetConfirmationEmail = async (email, name) => {
-  const fromAddress = process.env.SMTP_USER || process.env.EMAIL_FROM || 'no-reply@eklavya.com';
+  const fromAddress = process.env.EMAIL_FROM || 'onboarding@resend.dev';
 
   const content = `
     <h2 style="color: #22c55e; margin-top: 0;">Password Changed Successfully!</h2>
@@ -260,39 +142,21 @@ export const sendPasswordResetConfirmationEmail = async (email, name) => {
     </div>
   `;
 
-  const transporter = createTransporter();
-  const mailOptions = {
-    from: `"Eklavya" <${fromAddress}>`,
-    replyTo: fromAddress,
-    to: email,
-    subject: 'Eklavya - Password reset successful',
-    text: `Hello ${name}, your Eklavya password has been successfully updated.`,
-    html: getBaseTemplate('Password Reset Successful', content),
-    headers: {
-      'X-Priority': '1',
-      'X-Mailer': 'Eklavya Platform',
-    },
-  };
-
   try {
-    const info = await transporter.sendMail(mailOptions);
-    console.log('✅ Password reset confirmation email sent successfully');
-    console.log('   Recipient:', email);
-    console.log('   Sender:', fromAddress);
-    console.log('   MessageId:', info.messageId);
-    console.log('   Accepted:', info.accepted);
-    console.log('   Rejected:', info.rejected);
-    return info;
+    const { data, error } = await resend.emails.send({
+      from: \`Eklavya <\${fromAddress}>\`,
+      reply_to: fromAddress,
+      to: [email],
+      subject: 'Eklavya - Password reset successful',
+      html: getBaseTemplate('Password Reset Successful', content),
+    });
+
+    if (error) throw new Error(error.message);
+
+    console.log('✅ Password reset confirmation email sent successfully to:', email);
+    return data;
   } catch (err) {
-    console.error('❌ Password reset confirmation email FAILED');
-    console.error('   Recipient:', email);
-    console.error('   Error name:', err.name);
-    console.error('   Error message:', err.message);
-    console.error('   Error code:', err.code);
-    console.error('   Error command:', err.command);
-    console.error('   Error response:', err.response);
-    console.error('   Error responseCode:', err.responseCode);
-    console.error('   Error stack:', err.stack);
+    console.error('❌ Password reset confirmation email FAILED:', err.message);
     throw err;
   }
 };
