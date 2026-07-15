@@ -17,8 +17,10 @@ const studentLinks = [
 const teacherLinks = [
   { to: '/admin/dashboard?tab=overview', icon: BarChart2, label: 'Overview' },
   { to: '/admin/dashboard?tab=subjects', icon: BookOpen, label: 'Subjects' },
+  { to: '/admin/dashboard?tab=lectures', icon: Upload, label: 'Lectures' },
   { to: '/admin/dashboard?tab=students', icon: Users, label: 'Students' },
 ]
+
 
 const Sidebar = ({ onClose }) => {
   const { user, logout } = useAuth()

@@ -17,9 +17,13 @@ import uploadRoutes from './routes/uploadRoutes.js';
 import subjectRoutes from './routes/subjectRoutes.js';
 import chapterRoutes from './routes/chapterRoutes.js';
 import studentRoutes from './routes/studentRoutes.js';
+import lectureRoutes from './routes/lectureRoutes.js';
+import streamRoutes from './routes/streamRoutes.js';
+
 
 // Import middleware
 import errorHandler from './middleware/errorHandler.js';
+
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -51,6 +55,10 @@ app.use('/api/upload', uploadRoutes);
 app.use('/api/subjects', subjectRoutes);
 app.use('/api/chapters', chapterRoutes);
 app.use('/api/students', studentRoutes);
+app.use('/api/lectures', lectureRoutes);
+app.use('/api/stream', streamRoutes);
+
+
 
 // ── Health Check ──────────────────────────────────────────────────────────────
 app.get('/api/health', (req, res) => {

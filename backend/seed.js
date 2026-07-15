@@ -104,9 +104,10 @@ const seedDB = async () => {
             titleEn: ch.titleEn,
             chapterNumber: i + 1,
             classLevel: ch.classLevel,
-            videoUrl: 'https://www.youtube.com/embed/1F3hm6MfR1k', // valid string
+            videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4', // generic mp4 direct link
             isFree: i === 0, 
             isPublished: true
+
           });
           console.log(`  - Created Chapter ${i + 1}: ${ch.titleEn}`);
         } else {

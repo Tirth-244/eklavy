@@ -12,6 +12,9 @@ import { chapterAPI } from '../../api/chapter.api'
 import { paymentAPI } from '../../api/payment.api'
 import { progressAPI } from '../../api/progress.api'
 import { purchaseAPI } from '../../api/purchase.api'
+import { lectureAPI } from '../../api/lecture.api'
+import VideoPlayer from '../../components/VideoPlayer'
+
 import { useAuth } from '../../context/AuthContext'
 import './CoursePage.css'
 
@@ -36,11 +39,13 @@ const CoursePage = () => {
 
   const [course, setCourse] = useState(null)
   const [chapters, setChapters] = useState([])
+  const [lectures, setLectures] = useState([])
   const [isPurchased, setIsPurchased] = useState(false)
   const [selectedVideo, setSelectedVideo] = useState(null)
   const [loadingCourse, setLoadingCourse] = useState(true)
   const [paying, setPaying] = useState(false)
   const [completedIds, setCompletedIds] = useState(new Set())
+
 
   const normSubject = normalizeSubject(subject)
   const meta = SUBJECT_META[normSubject] || SUBJECT_META.Physics
@@ -59,7 +64,16 @@ const CoursePage = () => {
         const fetchedChapters = chaptersRes.data.data || []
         setChapters(fetchedChapters)
 
-        if (isAuthenticated) {
+        if (fetchedCourse) {
+          try {
+            const lecturesRes = await lectureAPI.getByCourse(fetchedCourse._id)
+            setLectures(lecturesRes.data.data || [])
+          } catch (err) {
+            console.error('Failed to fetch lectures', err)
+          }
+        }
+
+        if (isAuthenticated && fetchedCourse) {
           try {
             const purchaseRes = await purchaseAPI.getStatus(fetchedCourse._id)
             setIsPurchased(purchaseRes.data.isPurchased)
@@ -81,6 +95,7 @@ const CoursePage = () => {
     }
     fetchAll()
   }, [normSubject, isAuthenticated])
+
 
   const handleBuy = async () => {
     if (!isAuthenticated) {
@@ -207,20 +222,24 @@ const CoursePage = () => {
                 <span style={{ fontSize: '1rem' }}>❌</span> Close
               </button>
             </div>
-            <div className="video-wrapper">
-              <ReactPlayer
-                url={selectedVideo.videoUrl}
-                controls
-                width="100%"
-                height="100%"
-                style={{ borderRadius: '12px', overflow: 'hidden' }}
-                onEnded={() => {
-                  if (isAuthenticated) handleMarkComplete(selectedVideo._id)
-                }}
-              />
+             <div className="video-wrapper">
+              {selectedVideo.isHls ? (
+                <VideoPlayer courseId={course?._id} lectureId={selectedVideo._id} />
+              ) : (
+                <ReactPlayer
+                  url={selectedVideo.videoUrl}
+                  controls
+                  width="100%"
+                  height="100%"
+                  style={{ borderRadius: '12px', overflow: 'hidden' }}
+                  onEnded={() => {
+                    if (isAuthenticated) handleMarkComplete(selectedVideo._id)
+                  }}
+                />
+              )}
             </div>
             <div className="video-info">
-              <h3>{selectedVideo.titleGu} ({selectedVideo.titleEn})</h3>
+              <h3>{selectedVideo.isHls ? selectedVideo.title : `${selectedVideo.titleGu} (${selectedVideo.titleEn})`}</h3>
               <div className="video-meta">
                 <span className={`badge badge-${selectedVideo.isFree ? 'emerald' : 'indigo'}`}>
                   {selectedVideo.isFree ? 'Free Demo' : 'Premium'}
@@ -228,6 +247,7 @@ const CoursePage = () => {
                 {completedIds.has(selectedVideo._id) && (
                   <span className="badge badge-gold"><CheckCircle size={12} /> Completed</span>
                 )}
+
               </div>
             </div>
           </div>
@@ -236,6 +256,62 @@ const CoursePage = () => {
 
       {/* Content List */}
       <div className="container content-section">
+        {/* Secure HLS Video Lectures */}
+        {lectures.length > 0 && (
+          <div className="chapter-list-section animate-fade-in" style={{ marginBottom: '40px' }}>
+            <div className="chapter-list-header" style={{ marginBottom: '20px' }}>
+              <Play size={20} style={{ color: 'var(--accent-gold)' }} />
+              <h2>સુરક્ષિત વિડીયો લેક્ચર્સ — Secure Video Lectures</h2>
+              <span className="badge badge-gold">{lectures.length} lectures</span>
+            </div>
+            <div className="chapter-grid">
+              {lectures.map((lec) => {
+                const isAccessible = isPurchased || lec.isFree;
+                const isReady = lec.status === 'ready';
+                return (
+                  <div
+                    key={lec._id}
+                    className={`chapter-card ${isAccessible && isReady ? 'chapter-unlocked' : 'chapter-locked'}`}
+                    onClick={() => {
+                      if (!isReady) {
+                        toast.error('Lecture video is still processing HLS...');
+                      } else if (!isAccessible) {
+                        toast.error('Please purchase the course to watch this lecture', { icon: '🔒' });
+                      } else {
+                        setSelectedVideo({ ...lec, isHls: true });
+                      }
+                    }}
+                    style={{ opacity: isReady ? 1 : 0.6 }}
+                  >
+                    <div className="chapter-card-num">
+                      {String(lec.order).padStart(2, '0')}
+                    </div>
+                    <div className="chapter-card-content">
+                      <h4 className="chapter-title-gu">{lec.title}</h4>
+                      <p className="chapter-title-en">{lec.description || 'Secure HLS Stream'}</p>
+                    </div>
+                    <div className={`chapter-state-icon ${isAccessible && isReady ? 'state-play' : 'state-lock'}`}>
+                      {isAccessible && isReady ? (
+                        <>
+                          <Play size={14} fill="currentColor" />
+                          <span>Watch</span>
+                        </>
+                      ) : !isReady ? (
+                        <span>Processing...</span>
+                      ) : (
+                        <>
+                          <Lock size={14} />
+                          <span>Locked</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Full Syllabus Section */}
         <div className="content-group">
           <ChapterList 
@@ -246,6 +322,7 @@ const CoursePage = () => {
             onChapterClick={(ch) => setSelectedVideo(ch)}
           />
         </div>
+
 
         {chapters.length === 0 && (
           <div className="empty-content">
