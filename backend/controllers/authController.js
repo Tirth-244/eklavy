@@ -237,13 +237,14 @@ export const forgotPassword = asyncHandler(async (req, res) => {
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
   const otpExpires = Date.now() + 10 * 60 * 1000; // 10 minutes
 
-  user.otp = otp;
-  user.otpExpires = otpExpires;
-  user.otpAttempts = 0; // reset attempts
-  await user.save();
-
   try {
     await sendForgotPasswordOTPEmail(email, user.name, otp);
+    
+    // Only save OTP to DB if email was successfully sent
+    user.otp = otp;
+    user.otpExpires = otpExpires;
+    user.otpAttempts = 0; // reset attempts
+    await user.save();
   } catch (err) {
     console.error('❌ Failed to send OTP email:', err);
     return res.status(500).json({ success: false, message: 'Failed to send OTP. Please try again later.' });
