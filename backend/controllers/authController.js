@@ -625,20 +625,6 @@ export const getMe = asyncHandler(async (req, res) => {
   });
 });
 
-export const testEmail = async (req, res) => {
-  try {
-    const info = await sendForgotPasswordOTPEmail('tithu244@gmail.com', 'Test User', '123456');
-    res.status(200).json({ success: true, message: 'Email sent successfully', info });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-      stack: error.stack,
-      code: error.code,
-      response: error.response,
-      responseCode: error.responseCode,
-      command: error.command
-    });
-  }
-};
+
+
 
