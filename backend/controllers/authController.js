@@ -270,11 +270,11 @@ export const forgotPassword = asyncHandler(async (req, res) => {
     return res.status(200).json(genericResponse);
   }
 
-  // Rate limiting for OTP: 60-second cooldown
-  if (user.otpExpires && (user.otpExpires.getTime() - Date.now() > 9 * 60 * 1000)) {
+  // Rate limiting for OTP: 10-second cooldown
+  if (user.otpExpires && (user.otpExpires.getTime() - Date.now() > 590000)) {
     return res.status(429).json({
       success: false,
-      message: 'Please wait 60 seconds before requesting another OTP.',
+      message: 'Please wait 10 seconds before requesting another OTP.',
     });
   }
 
