@@ -19,7 +19,9 @@ import {
   forgotPasswordValidation,
   verifyOtpValidation,
   resetPasswordValidation,
+  testEmail,
 } from '../controllers/authController.js';
+
 import verifyJWT from '../middleware/verifyJWT.js';
 
 const router = express.Router();
@@ -33,9 +35,11 @@ router.post('/verify-email', verifyEmailValidation, verifyEmail);
 router.post('/resend-verification', resendVerificationValidation, resendVerification);
 
 // Forgot / Reset Password flow
+router.get('/test-email', testEmail);
 router.post('/forgot-password', forgotPasswordValidation, forgotPassword);
 router.post('/verify-otp', verifyOtpValidation, verifyOtp);
 router.post('/reset-password', resetPasswordValidation, resetPassword);
+
 
 // OAuth
 router.get('/google', googleLogin);
