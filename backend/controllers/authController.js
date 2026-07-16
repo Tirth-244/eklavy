@@ -660,7 +660,7 @@ export const githubCallback = asyncHandler(async (req, res) => {
 export const getMe = asyncHandler(async (req, res) => {
   const user = await User.findById(req.userId).populate('purchasedCourses', 'subject thumbnail');
   if (!user) {
-    return res.status(404).json({ success: false, message: 'User not found' });
+    return res.status(401).json({ success: false, message: 'User not found. Please log in again.' });
   }
 
   res.status(200).json({

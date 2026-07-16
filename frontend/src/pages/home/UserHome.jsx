@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowRight, Play, BookOpen, Trophy, Atom, FlaskConical, Calculator } from 'lucide-react'
 import Navbar from '../../components/Navbar'
+import Chatbot from '../../components/Chatbot'
 import { useAuth } from '../../context/AuthContext'
 import { purchaseAPI } from '../../api/purchase.api'
 import './Home.css'
@@ -146,6 +147,7 @@ const UserHome = () => {
           <p>© {new Date().getFullYear()} Eklavya Education. All rights reserved.</p>
         </div>
       </footer>
+      <Chatbot />
     </div>
   )
 }

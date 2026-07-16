@@ -44,6 +44,7 @@ dotenv.config();
 
 // Import routes
 import authRoutes from './routes/authRoutes.js';
+import chatRoutes from './routes/chatRoutes.js';
 import courseRoutes from './routes/courseRoutes.js';
 import contentRoutes from './routes/contentRoutes.js';
 import purchaseRoutes from './routes/purchaseRoutes.js';
@@ -67,7 +68,13 @@ const PORT = process.env.PORT || 5000;
 // ── Global Middleware ─────────────────────────────────────────────────────────
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    origin: function(origin, callback) {
+      if (!origin || origin.includes('localhost') || origin.includes('127.0.0.1') || origin === process.env.FRONTEND_URL) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     credentials: true,
   })
 );
@@ -101,6 +108,7 @@ mongoose.connection.on('reconnected', () => {
 
 // ── Routes ────────────────────────────────────────────────────────────────────
 app.use('/api/auth', authRoutes);
+app.use('/api/chat', chatRoutes);
 app.use('/api/courses', courseRoutes);
 app.use('/api/content', contentRoutes);
 app.use('/api/purchase', purchaseRoutes);
